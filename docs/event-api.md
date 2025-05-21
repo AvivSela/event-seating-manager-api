@@ -33,6 +33,7 @@ GET /api/events
   {
     "id": 1,
     "userId": 1,
+    "venueId": 1,
     "type": "WEDDING",
     "title": "John & Jane's Wedding",
     "description": "Celebration of John and Jane's marriage",
@@ -60,6 +61,7 @@ GET /api/events/:id
 {
   "id": 1,
   "userId": 1,
+  "venueId": 1,
   "type": "WEDDING",
   "title": "John & Jane's Wedding",
   "description": "Celebration of John and Jane's marriage",
@@ -85,7 +87,8 @@ POST /api/events
   "title": "John & Jane's Wedding",
   "description": "Celebration of John and Jane's marriage",
   "date": "2024-06-15T15:00:00.000Z",
-  "userId": 1
+  "userId": 1,
+  "venueId": 1
 }
 ```
 
@@ -94,6 +97,7 @@ Required fields:
 - `title`: Event title
 - `date`: ISO date string
 - `userId`: ID of the user who owns the event
+- `venueId`: ID of the venue where the event will be held
 
 Optional fields:
 - `description`: Event description
@@ -104,6 +108,7 @@ Optional fields:
 {
   "id": 1,
   "userId": 1,
+  "venueId": 1,
   "type": "WEDDING",
   "title": "John & Jane's Wedding",
   "description": "Celebration of John and Jane's marriage",
@@ -128,7 +133,8 @@ PUT /api/events/:id
 ```json
 {
   "title": "Updated Wedding Title",
-  "description": "Updated description"
+  "description": "Updated description",
+  "venueId": 2
 }
 ```
 
@@ -140,6 +146,7 @@ All fields are optional. Only specified fields will be updated.
 {
   "id": 1,
   "userId": 1,
+  "venueId": 2,
   "type": "WEDDING",
   "title": "Updated Wedding Title",
   "description": "Updated description",
@@ -184,6 +191,7 @@ GET /api/users/:userId/events
   {
     "id": 1,
     "userId": 1,
+    "venueId": 1,
     "type": "WEDDING",
     "title": "John & Jane's Wedding",
     "description": "Celebration of John and Jane's marriage",
@@ -204,9 +212,17 @@ GET /api/users/:userId/events
 ```
 
 ### Bad Request (400)
+For missing required fields:
 ```json
 {
-  "message": "Type, title, date, and userId are required"
+  "message": "Type, title, date, userId, and venueId are required"
+}
+```
+
+For invalid venue:
+```json
+{
+  "message": "Venue not found"
 }
 ```
 
@@ -238,7 +254,8 @@ curl -X POST http://localhost:3000/api/events \
     "title": "John & Jane'\''s Wedding",
     "description": "Celebration of John and Jane'\''s marriage",
     "date": "2024-06-15T15:00:00.000Z",
-    "userId": 1
+    "userId": 1,
+    "venueId": 1
   }'
 ```
 
