@@ -147,6 +147,98 @@ describe('Table Assignment API Routes', () => {
       expect(response.status).toBe(400);
       expect(response.body.code).toBe('INVALID_PARTY_SIZE');
     });
+
+    it('should handle invalid event ID format', async () => {
+      const response = await request(app)
+        .post(`/api/events/invalid-uuid/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid event ID format');
+    });
+
+    it('should handle non-existent event', async () => {
+      const response = await request(app)
+        .post(`/api/events/${generateUUID()}/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Event not found');
+    });
+
+    it('should handle missing venue map', async () => {
+      // Create venue without map
+      const venueWithoutMap: Venue = {
+        id: generateUUID(),
+        name: 'Venue Without Map',
+        address: '123 Test St',
+        capacity: 100,
+        createdAt: new Date()
+      };
+      venues.push(venueWithoutMap);
+
+      // Create event with the mapless venue
+      const eventWithoutMap: Event = {
+        id: generateUUID(),
+        userId: TEST_USER_ID,
+        venueId: venueWithoutMap.id,
+        type: EventType.WEDDING,
+        title: 'Test Wedding',
+        description: 'Test event without venue map',
+        date: new Date('2024-12-31'),
+        createdAt: new Date()
+      };
+      events.push(eventWithoutMap);
+
+      const response = await request(app)
+        .post(`/api/events/${eventWithoutMap.id}/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Venue or venue map not found');
+    });
+
+    it('should handle duplicate seat numbers', async () => {
+      const response = await request(app)
+        .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 1]  // Duplicate seat number
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe('INVALID_SEAT_NUMBERS');
+    });
+
+    it('should handle guest already assigned to another table', async () => {
+      // First assignment
+      await request(app)
+        .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
+
+      // Try to assign same guest to another table
+      const response = await request(app)
+        .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [3, 4]
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe('GUEST_ALREADY_ASSIGNED');
+    });
   });
 
   describe('GET /api/events/:eventId/tables/:tableId/assignments', () => {
@@ -170,6 +262,61 @@ describe('Table Assignment API Routes', () => {
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body).toHaveLength(1);
       expect(response.body[0].id).toBe(assignment.id);
+    });
+
+    it('should handle invalid event ID format', async () => {
+      const response = await request(app)
+        .get(`/api/events/invalid-uuid/tables/${testTableId}/assignments`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid event ID format');
+    });
+
+    it('should handle non-existent event', async () => {
+      const response = await request(app)
+        .get(`/api/events/${generateUUID()}/tables/${testTableId}/assignments`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Event not found');
+    });
+
+    it('should handle missing venue map', async () => {
+      // Create venue without map
+      const venueWithoutMap: Venue = {
+        id: generateUUID(),
+        name: 'Venue Without Map',
+        address: '123 Test St',
+        capacity: 100,
+        createdAt: new Date()
+      };
+      venues.push(venueWithoutMap);
+
+      // Create event with the mapless venue
+      const eventWithoutMap: Event = {
+        id: generateUUID(),
+        userId: TEST_USER_ID,
+        venueId: venueWithoutMap.id,
+        type: EventType.WEDDING,
+        title: 'Test Wedding',
+        description: 'Test event without venue map',
+        date: new Date('2024-12-31'),
+        createdAt: new Date()
+      };
+      events.push(eventWithoutMap);
+
+      const response = await request(app)
+        .get(`/api/events/${eventWithoutMap.id}/tables/${testTableId}/assignments`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Venue or venue map not found');
+    });
+
+    it('should handle non-existent table', async () => {
+      const response = await request(app)
+        .get(`/api/events/${testEvent.id}/tables/non-existent-table/assignments`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe('TABLE_NOT_FOUND');
     });
   });
 
@@ -203,6 +350,61 @@ describe('Table Assignment API Routes', () => {
         .delete(`/api/events/${testEvent.id}/tables/${testTableId}/assignments/${generateUUID()}`);
 
       expect(response.status).toBe(404);
+    });
+
+    it('should handle invalid event/guest ID format', async () => {
+      const response = await request(app)
+        .delete(`/api/events/invalid-uuid/tables/${testTableId}/assignments/invalid-uuid`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid ID format');
+    });
+
+    it('should handle non-existent event', async () => {
+      const response = await request(app)
+        .delete(`/api/events/${generateUUID()}/tables/${testTableId}/assignments/${testGuest.id}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Event not found');
+    });
+
+    it('should handle missing venue map', async () => {
+      // Create venue without map
+      const venueWithoutMap: Venue = {
+        id: generateUUID(),
+        name: 'Venue Without Map',
+        address: '123 Test St',
+        capacity: 100,
+        createdAt: new Date()
+      };
+      venues.push(venueWithoutMap);
+
+      // Create event with the mapless venue
+      const eventWithoutMap: Event = {
+        id: generateUUID(),
+        userId: TEST_USER_ID,
+        venueId: venueWithoutMap.id,
+        type: EventType.WEDDING,
+        title: 'Test Wedding',
+        description: 'Test event without venue map',
+        date: new Date('2024-12-31'),
+        createdAt: new Date()
+      };
+      events.push(eventWithoutMap);
+
+      const response = await request(app)
+        .delete(`/api/events/${eventWithoutMap.id}/tables/${testTableId}/assignments/${testGuest.id}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Venue or venue map not found');
+    });
+
+    it('should handle non-existent table', async () => {
+      const response = await request(app)
+        .delete(`/api/events/${testEvent.id}/tables/non-existent-table/assignments/${testGuest.id}`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe('TABLE_NOT_FOUND');
     });
   });
 }); 
