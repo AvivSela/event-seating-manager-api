@@ -4,11 +4,6 @@ import { Venue, CreateVenueDto, UpdateVenueDto, VenueMap, VenueFeature } from '.
 export let venues: Venue[] = [];
 let nextId = 1;
 
-// For testing purposes
-export const clearVenues = () => {
-  venues = [];
-};
-
 // Validate map data
 function validateVenueMap(map: VenueMap | undefined): void {
   if (!map) return;

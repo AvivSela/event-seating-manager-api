@@ -3,8 +3,9 @@ import app from '../app';
 import { Event, EventType } from '../types/event';
 import { User } from '../types/user';
 import { Venue } from '../types/venue';
-import { clearEvents } from '../controllers/eventController';
-import { clearVenues } from '../controllers/venueController';
+import { clearEvents, clearVenues } from '../utils/testUtils';
+import { events } from '../controllers/eventController';
+import { venues } from '../controllers/venueController';
 
 describe('Event API Routes', () => {
   let testUser: User;

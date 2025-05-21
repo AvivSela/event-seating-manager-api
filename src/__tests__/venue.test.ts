@@ -1,7 +1,8 @@
 import request from 'supertest';
 import app from '../app';
 import { Venue, VenueMap, VenueFeature } from '../types/venue';
-import { clearVenues } from '../controllers/venueController';
+import { clearVenues } from '../utils/testUtils';
+import { venues } from '../controllers/venueController';
 
 describe('Venue API Routes', () => {
   let createdVenue: Venue;

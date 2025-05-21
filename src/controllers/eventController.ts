@@ -5,11 +5,6 @@ import { venues } from './venueController';
 export let events: Event[] = [];
 let nextId = 1;
 
-// For testing purposes
-export const clearEvents = () => {
-  events = [];
-};
-
 // Get all events
 export const getAllEvents = (_req: Request, res: Response): void => {
   res.json(events);
