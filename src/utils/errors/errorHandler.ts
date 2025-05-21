@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from './customErrors';
+import logger from '../logging/logger';
 
 export const errorHandler = (
   err: Error,
@@ -7,7 +8,11 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  console.error(err);
+  logger.error('Error occurred:', {
+    error: err.name,
+    message: err.message,
+    stack: err.stack
+  });
 
   if (err instanceof ApiError) {
     res.status(err.statusCode).json({
