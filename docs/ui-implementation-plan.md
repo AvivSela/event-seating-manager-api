@@ -5,11 +5,21 @@ This document outlines the implementation plan for the Event Seating Management 
 
 ## Phase 1: Setup and Foundation (Week 1)
 
+### 1.0 Repository Organization (1 day)
+- [x] Set up monorepo structure with pnpm workspaces
+- [x] Create directory structure:
+  - `apps/api` for existing API server
+  - `apps/web` for new UI application
+  - `packages/` for shared code
+- [x] Move existing API code to `apps/api`
+- [ ] Configure workspace-level tooling and scripts
+- [ ] Update documentation with development workflows
+
 ### 1.1 Project Setup (1 day)
-- [ ] Initialize React project with TypeScript
-- [ ] Set up Vite for build tooling
-- [ ] Configure ESLint and Prettier
-- [ ] Set up testing environment (Vitest + React Testing Library)
+- [x] Initialize React project with TypeScript
+- [x] Set up Vite for build tooling
+- [x] Configure ESLint and Prettier
+- [x] Set up testing environment (Vitest + React Testing Library)
 - [ ] Configure CI/CD pipeline
 
 ### 1.2 Design System Setup (2 days)
@@ -111,6 +121,52 @@ This document outlines the implementation plan for the Event Seating Management 
 - [ ] Add helpful tooltips
 - [ ] Create onboarding tour
 - [ ] Polish animations and transitions
+
+## Repository Organization
+
+### Monorepo Structure
+- [ ] Reorganize repository into monorepo structure:
+  ```
+  /
+  ├── apps/
+  │   ├── api/           # Existing API server
+  │   │   ├── src/
+  │   │   ├── tests/
+  │   │   └── package.json
+  │   └── web/           # New UI application
+  │       ├── src/
+  │       ├── tests/
+  │       └── package.json
+  ├── packages/          # Shared packages
+  │   ├── types/        # Shared TypeScript types
+  │   │   └── package.json
+  │   └── config/       # Shared configurations
+  │       └── package.json
+  ├── docs/             # Documentation
+  ├── .github/          # GitHub workflows
+  ├── package.json      # Root package.json
+  └── README.md
+  ```
+
+### Migration Steps (1 day)
+- [ ] Create monorepo structure using pnpm workspaces
+- [ ] Move existing API code to `apps/api`
+- [ ] Set up new UI project in `apps/web`
+- [ ] Create shared packages for common code
+- [ ] Configure workspace-level scripts
+- [ ] Update CI/CD pipeline for monorepo
+- [ ] Add workspace-level development tools:
+  - ESLint configurations
+  - Prettier configurations
+  - TypeScript configurations
+  - Jest/Vitest configurations
+
+### Development Workflow
+- [ ] Configure concurrent development scripts
+- [ ] Set up workspace-level dependencies
+- [ ] Implement shared type definitions
+- [ ] Create development documentation
+- [ ] Add workspace-level git hooks
 
 ## Technical Stack
 
