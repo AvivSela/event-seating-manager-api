@@ -1,6 +1,6 @@
 import { User } from '../../types/user';
 import { Event, EventType } from '../../types/event';
-import { Venue } from '../../types/venue';
+import type { Venue, VenueMap, VenueFeature, TableFeature } from '../../types/venue';
 import { generateUUID } from '../../utils/uuid';
 
 // Fixed UUIDs for testing
