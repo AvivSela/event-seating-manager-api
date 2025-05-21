@@ -25,20 +25,39 @@ This document outlines the implementation plan for the Event Seating Management 
 ### 1.2 Design System Setup (2 days)
 - [x] Set up Tailwind CSS
 - [x] Create color palette and typography system
-- [ ] Build basic component library:
-  - Buttons (primary, secondary, danger)
-  - Input fields
-  - Form elements
-  - Cards
-  - Modals
-  - Toast notifications
+- [x] Build basic component library:
+  - [x] Buttons (primary, secondary, danger)
+    - Variants: primary, secondary, danger, ghost
+    - Sizes: sm, md, lg
+    - Full width support
+  - [x] Input fields
+    - Variants and error states
+    - Sizes: sm, default, lg
+    - Error message display
+  - [x] Form elements
+    - [x] Checkbox (with indeterminate state)
+    - [x] Radio (with label and error states)
+    - [x] Select (with placeholder and sizes)
+  - [x] Cards
+    - Header, content, footer sections
+    - Variants: default, elevated
+    - Padding options
+  - [x] Modals
+    - Portal-based with backdrop
+    - Multiple sizes (sm, md, lg, xl)
+    - Keyboard support (Escape)
+    - Subcomponents for structure
+  - [x] Toast notifications
+    - Multiple types (success, error, warning, info)
+    - Auto-dismiss with custom duration
+    - Stacking support
+    - Accessible notifications
 - [ ] Implement responsive layout system
 - [ ] Create loading states and animations
 
 ### 1.3 Core Infrastructure (2 days)
 - [x] Set up React Router for navigation
 - [x] Implement API client with Axios
-- [ ] Add authentication system
 - [ ] Create error handling utilities
 - [x] Set up state management (React Query)
 - [ ] Implement WebSocket connection for real-time updates
