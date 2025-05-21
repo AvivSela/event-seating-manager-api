@@ -12,8 +12,8 @@ This document outlines the implementation plan for the Event Seating Management 
   - `apps/web` for new UI application
   - `packages/` for shared code
 - [x] Move existing API code to `apps/api`
-- [ ] Configure workspace-level tooling and scripts
-- [ ] Update documentation with development workflows
+- [x] Configure workspace-level tooling and scripts
+- [x] Update documentation with development workflows
 
 ### 1.1 Project Setup (1 day)
 - [x] Initialize React project with TypeScript
