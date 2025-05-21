@@ -3,7 +3,6 @@ import cors from 'cors';
 import morgan from 'morgan';
 import userRoutes from './routes/userRoutes';
 import eventRoutes from './routes/eventRoutes';
-import userEventRoutes from './routes/userEventRoutes';
 import venueRoutes from './routes/venueRoutes';
 
 const app: Express = express();
@@ -16,7 +15,6 @@ app.use(express.json());
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/events', eventRoutes);
-app.use('/api/users/:userId/events', userEventRoutes);
 app.use('/api/venues', venueRoutes);
 
 // Error handling
