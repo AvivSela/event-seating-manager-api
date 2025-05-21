@@ -1,5 +1,5 @@
 export interface User {
-  id: number;
+  id: string;  // UUID string
   name: string;
   email: string;
   createdAt: Date;

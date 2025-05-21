@@ -6,11 +6,13 @@ import { Venue } from "../types/venue";
 import { clearEvents, clearVenues } from "../utils/testUtils";
 import { events } from "../controllers/eventController";
 import { venues } from "../controllers/venueController";
+import { generateUUID } from "../utils/uuid";
 
 describe("Event API Routes", () => {
   let testUser: User;
   let testVenue: Venue;
   let createdEvent: Event;
+  const nonExistentId = generateUUID(); // Use a valid UUID format for non-existent event/venue
 
   // Create a test user before running event tests
   beforeAll(async () => {
@@ -79,11 +81,25 @@ describe("Event API Routes", () => {
         description: "Test Description",
         date: "2024-06-15T15:00:00.000Z",
         userId: testUser.id,
-        venueId: 999,
+        venueId: nonExistentId,
       });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe("Venue not found");
+    });
+
+    it("should return 400 for invalid venue UUID format", async () => {
+      const response = await request(app).post("/api/events").send({
+        type: EventType.WEDDING,
+        title: "Test Event",
+        description: "Test Description",
+        date: "2024-06-15T15:00:00.000Z",
+        userId: testUser.id,
+        venueId: "invalid-uuid",
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid venue ID format");
     });
   });
 
@@ -167,10 +183,17 @@ describe("Event API Routes", () => {
     });
 
     it("should return 404 for non-existent event", async () => {
-      const response = await request(app).get("/api/events/999");
+      const response = await request(app).get(`/api/events/${nonExistentId}`);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("Event not found");
+    });
+
+    it("should return 400 for invalid UUID format", async () => {
+      const response = await request(app).get("/api/events/invalid-uuid");
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid event ID format");
     });
   });
 
@@ -206,7 +229,7 @@ describe("Event API Routes", () => {
     });
 
     it("should return 404 for non-existent event", async () => {
-      const response = await request(app).put("/api/events/999").send({
+      const response = await request(app).put(`/api/events/${nonExistentId}`).send({
         title: "Updated Title",
       });
 
@@ -214,11 +237,20 @@ describe("Event API Routes", () => {
       expect(response.body.message).toBe("Event not found");
     });
 
+    it("should return 400 for invalid UUID format", async () => {
+      const response = await request(app).put("/api/events/invalid-uuid").send({
+        title: "Updated Title",
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid event ID format");
+    });
+
     it("should return 400 when updating to non-existent venue", async () => {
       const eventData = {
         type: EventType.WEDDING,
-        title: "John & Jane's Wedding",
-        description: "Celebration of John and Jane's marriage",
+        title: "Test Event",
+        description: "Test Description",
         date: "2024-06-15T15:00:00.000Z",
         userId: testUser.id,
         venueId: testVenue.id,
@@ -228,11 +260,11 @@ describe("Event API Routes", () => {
         .post("/api/events")
         .send(eventData);
 
-      const eventId = createResponse.body.id;
-
-      const response = await request(app).put(`/api/events/${eventId}`).send({
-        venueId: 999,
-      });
+      const response = await request(app)
+        .put(`/api/events/${createResponse.body.id}`)
+        .send({
+          venueId: nonExistentId,
+        });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe("Venue not found");
@@ -268,10 +300,17 @@ describe("Event API Routes", () => {
     });
 
     it("should return 404 for non-existent event", async () => {
-      const response = await request(app).delete("/api/events/999");
+      const response = await request(app).delete(`/api/events/${nonExistentId}`);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("Event not found");
+    });
+
+    it("should return 400 for invalid UUID format", async () => {
+      const response = await request(app).delete("/api/events/invalid-uuid");
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid event ID format");
     });
   });
 

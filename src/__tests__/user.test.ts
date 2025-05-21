@@ -1,9 +1,11 @@
 import request from "supertest";
 import app from "../app";
 import { User } from "../types/user";
+import { generateUUID } from "../utils/uuid";
 
 describe("User API Routes", () => {
   let createdUser: User;
+  const nonExistentId = generateUUID(); // Use a valid UUID format for non-existent user
 
   describe("POST /api/users", () => {
     it("should create a new user", async () => {
@@ -64,10 +66,17 @@ describe("User API Routes", () => {
     });
 
     it("should return 404 for non-existent user", async () => {
-      const response = await request(app).get("/api/users/999");
+      const response = await request(app).get(`/api/users/${nonExistentId}`);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("User not found");
+    });
+
+    it("should return 400 for invalid UUID format", async () => {
+      const response = await request(app).get("/api/users/invalid-uuid");
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid user ID format");
     });
   });
 
@@ -99,12 +108,21 @@ describe("User API Routes", () => {
     });
 
     it("should return 404 for non-existent user", async () => {
-      const response = await request(app).put("/api/users/999").send({
+      const response = await request(app).put(`/api/users/${nonExistentId}`).send({
         name: "John Updated",
       });
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("User not found");
+    });
+
+    it("should return 400 for invalid UUID format", async () => {
+      const response = await request(app).put("/api/users/invalid-uuid").send({
+        name: "John Updated",
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid user ID format");
     });
   });
 
@@ -125,10 +143,17 @@ describe("User API Routes", () => {
     });
 
     it("should return 404 for non-existent user", async () => {
-      const response = await request(app).delete("/api/users/999");
+      const response = await request(app).delete(`/api/users/${nonExistentId}`);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("User not found");
+    });
+
+    it("should return 400 for invalid UUID format", async () => {
+      const response = await request(app).delete("/api/users/invalid-uuid");
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid user ID format");
     });
   });
 });

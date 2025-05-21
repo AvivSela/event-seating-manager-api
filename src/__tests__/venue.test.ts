@@ -3,9 +3,11 @@ import app from "../app";
 import { Venue, VenueMap, VenueFeature } from "../types/venue";
 import { clearVenues } from "../utils/testUtils";
 import { venues } from "../controllers/venueController";
+import { generateUUID } from "../utils/uuid";
 
 describe("Venue API Routes", () => {
   let createdVenue: Venue;
+  const nonExistentId = generateUUID(); // Use a valid UUID format for non-existent venue
 
   beforeEach(() => {
     clearVenues();
@@ -99,10 +101,17 @@ describe("Venue API Routes", () => {
     });
 
     it("should return 404 for non-existent venue", async () => {
-      const response = await request(app).get("/api/venues/999");
+      const response = await request(app).get(`/api/venues/${nonExistentId}`);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("Venue not found");
+    });
+
+    it("should return 400 for invalid UUID format", async () => {
+      const response = await request(app).get("/api/venues/invalid-uuid");
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid venue ID format");
     });
   });
 
@@ -139,12 +148,21 @@ describe("Venue API Routes", () => {
     });
 
     it("should return 404 for non-existent venue", async () => {
-      const response = await request(app).put("/api/venues/999").send({
+      const response = await request(app).put(`/api/venues/${nonExistentId}`).send({
         name: "Updated Name",
       });
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("Venue not found");
+    });
+
+    it("should return 400 for invalid UUID format", async () => {
+      const response = await request(app).put("/api/venues/invalid-uuid").send({
+        name: "Updated Name",
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid venue ID format");
     });
   });
 
@@ -175,10 +193,17 @@ describe("Venue API Routes", () => {
     });
 
     it("should return 404 for non-existent venue", async () => {
-      const response = await request(app).delete("/api/venues/999");
+      const response = await request(app).delete(`/api/venues/${nonExistentId}`);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("Venue not found");
+    });
+
+    it("should return 400 for invalid UUID format", async () => {
+      const response = await request(app).delete("/api/venues/invalid-uuid");
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid venue ID format");
     });
   });
 
