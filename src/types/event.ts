@@ -8,6 +8,7 @@ export enum EventType {
 export interface Event {
   id: number;
   userId: number;          // Reference to the owner/user
+  venueId: number;         // Reference to the venue
   type: EventType;
   title: string;
   description: string;
@@ -21,6 +22,7 @@ export interface CreateEventDto {
   title: string;
   description: string;
   date: string;           // ISO date string
+  venueId: number;        // Reference to the venue
 }
 
 export interface UpdateEventDto {
@@ -28,4 +30,5 @@ export interface UpdateEventDto {
   title?: string;
   description?: string;
   date?: string;          // ISO date string
+  venueId?: number;       // Reference to the venue
 } 

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Event, CreateEventDto, UpdateEventDto } from '../types/event';
+import { venues } from './venueController';
 
 export let events: Event[] = [];
 let nextId = 1;
@@ -39,18 +40,26 @@ export const createEvent = (
   req: Request<{}, {}, CreateEventDto & { userId: number }>,
   res: Response
 ): void => {
-  const { type, title, description, date, userId } = req.body;
+  const { type, title, description, date, userId, venueId } = req.body;
 
-  if (!type || !title || !date || !userId) {
+  if (!type || !title || !date || !userId || venueId === undefined) {
     res.status(400).json({ 
-      message: 'Type, title, date, and userId are required' 
+      message: 'Type, title, date, userId, and venueId are required' 
     });
+    return;
+  }
+
+  // Validate venue exists
+  const venue = venues.find(v => v.id === venueId);
+  if (!venue) {
+    res.status(400).json({ message: 'Venue not found' });
     return;
   }
 
   const newEvent: Event = {
     id: nextId++,
     userId,
+    venueId,
     type,
     title,
     description: description || '',
@@ -75,7 +84,16 @@ export const updateEvent = (
     return;
   }
 
-  const { type, title, description, date } = req.body;
+  const { type, title, description, date, venueId } = req.body;
+
+  // Validate venue exists if venueId is being updated
+  if (venueId !== undefined) {
+    const venue = venues.find(v => v.id === venueId);
+    if (!venue) {
+      res.status(400).json({ message: 'Venue not found' });
+      return;
+    }
+  }
 
   const updatedEvent: Event = {
     ...events[eventIndex],
@@ -83,6 +101,7 @@ export const updateEvent = (
     title: title || events[eventIndex].title,
     description: description || events[eventIndex].description,
     date: date ? new Date(date) : events[eventIndex].date,
+    venueId: venueId !== undefined ? venueId : events[eventIndex].venueId,
     updatedAt: new Date()
   };
 
