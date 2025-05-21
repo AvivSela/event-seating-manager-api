@@ -14,50 +14,29 @@ export default meta;
 type Story = StoryObj<typeof Button>;
 
 export const Primary: Story = {
-  args: {
-    children: 'Primary Button',
-    variant: 'primary',
-  },
+  render: () => <Button variant="primary">Primary Button</Button>,
 };
 
 export const Secondary: Story = {
-  args: {
-    children: 'Secondary Button',
-    variant: 'secondary',
-  },
+  render: () => <Button variant="secondary">Secondary Button</Button>,
 };
 
 export const Danger: Story = {
-  args: {
-    children: 'Delete',
-    variant: 'danger',
-  },
+  render: () => <Button variant="danger">Delete</Button>,
 };
 
 export const Ghost: Story = {
-  args: {
-    children: 'Ghost Button',
-    variant: 'ghost',
-  },
+  render: () => <Button variant="ghost">Ghost Button</Button>,
 };
 
 export const Small: Story = {
-  args: {
-    children: 'Small Button',
-    size: 'sm',
-  },
+  render: () => <Button size="sm">Small Button</Button>,
 };
 
 export const Large: Story = {
-  args: {
-    children: 'Large Button',
-    size: 'lg',
-  },
+  render: () => <Button size="lg">Large Button</Button>,
 };
 
 export const FullWidth: Story = {
-  args: {
-    children: 'Full Width Button',
-    fullWidth: true,
-  },
+  render: () => <Button fullWidth>Full Width Button</Button>,
 }; 
