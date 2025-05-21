@@ -110,7 +110,18 @@ export const getGuest = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Guest not found" });
     }
 
-    res.json(guest);
+    // Add assignment information to the response
+    const assignment = tableAssignments.find(a => a.guestId === guest.id);
+    const guestWithAssignment = {
+      ...guest,
+      tableAssignment: assignment ? {
+        tableId: assignment.tableId,
+        seatNumbers: assignment.seatNumbers,
+        assignedAt: assignment.assignedAt
+      } : undefined
+    };
+
+    res.json(guestWithAssignment);
   } catch (error) {
     res.status(500).json({ message: "Failed to retrieve guest" });
   }
