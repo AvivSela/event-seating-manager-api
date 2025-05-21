@@ -81,6 +81,24 @@ describe('Guest API Routes', () => {
       expect(response.status).toBe(400);
       expect(response.body.message).toBe('Party size must be at least 1');
     });
+
+    it('should handle invalid event ID format', async () => {
+      const response = await request(app)
+        .post('/api/events/invalid-uuid/guests')
+        .send({ name: 'Test Guest', partySize: 1 });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid event ID format');
+    });
+
+    it('should handle non-existent event', async () => {
+      const response = await request(app)
+        .post(`/api/events/${generateUUID()}/guests`)
+        .send({ name: 'Test Guest', partySize: 1 });
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Event not found');
+    });
   });
 
   describe('GET /api/events/:eventId/guests', () => {
@@ -92,6 +110,14 @@ describe('Guest API Routes', () => {
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body).toHaveLength(1);
       expect(response.body[0].id).toBe(testGuest.id);
+    });
+
+    it('should handle invalid event ID format', async () => {
+      const response = await request(app)
+        .get('/api/events/invalid-uuid/guests');
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid event ID format');
     });
   });
 
@@ -111,6 +137,14 @@ describe('Guest API Routes', () => {
 
       expect(response.status).toBe(404);
     });
+
+    it('should handle invalid guest ID format', async () => {
+      const response = await request(app)
+        .get(`/api/events/${testEvent.id}/guests/invalid-uuid`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid ID format');
+    });
   });
 
   describe('PUT /api/events/:eventId/guests/:guestId', () => {
@@ -129,6 +163,24 @@ describe('Guest API Routes', () => {
       expect(response.body.status).toBe(updateData.status);
       expect(response.body.updatedAt).toBeDefined();
     });
+
+    it('should handle invalid status value', async () => {
+      const response = await request(app)
+        .put(`/api/events/${testEvent.id}/guests/${testGuest.id}`)
+        .send({ status: 'INVALID_STATUS' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid guest status');
+    });
+
+    it('should handle invalid guest ID format', async () => {
+      const response = await request(app)
+        .put(`/api/events/${testEvent.id}/guests/invalid-uuid`)
+        .send({ name: 'Updated Name' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid ID format');
+    });
   });
 
   describe('DELETE /api/events/:eventId/guests/:guestId', () => {
@@ -141,6 +193,14 @@ describe('Guest API Routes', () => {
       const getResponse = await request(app)
         .get(`/api/events/${testEvent.id}/guests/${testGuest.id}`);
       expect(getResponse.status).toBe(404);
+    });
+
+    it('should handle invalid guest ID format', async () => {
+      const response = await request(app)
+        .delete(`/api/events/${testEvent.id}/guests/invalid-uuid`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid ID format');
     });
   });
 

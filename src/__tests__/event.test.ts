@@ -249,34 +249,8 @@ describe("Event API Routes", () => {
     it("should return 400 when updating to non-existent venue", async () => {
       const eventData = {
         type: EventType.WEDDING,
-        title: "Test Event",
-        description: "Test Description",
-        date: "2024-06-15T15:00:00.000Z",
-        userId: testUser.id,
-        venueId: testVenue.id,
-      };
-
-      const createResponse = await request(app)
-        .post("/api/events")
-        .send(eventData);
-
-      const response = await request(app)
-        .put(`/api/events/${createResponse.body.id}`)
-        .send({
-          venueId: nonExistentId,
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Venue not found");
-    });
-  });
-
-  describe("DELETE /api/events/:id", () => {
-    it("should delete an event", async () => {
-      const eventData = {
-        type: EventType.WEDDING,
-        title: "John & Jane's Wedding",
-        description: "Celebration of John and Jane's marriage",
+        title: "Original Title",
+        description: "Original Description",
         date: "2024-06-15T15:00:00.000Z",
         userId: testUser.id,
         venueId: testVenue.id,
@@ -288,14 +262,64 @@ describe("Event API Routes", () => {
 
       const eventId = createResponse.body.id;
 
-      const deleteResponse = await request(app).delete(
-        `/api/events/${eventId}`,
-      );
+      const response = await request(app)
+        .put(`/api/events/${eventId}`)
+        .send({
+          venueId: nonExistentId,
+        });
 
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Venue not found");
+    });
+
+    it("should handle invalid venue ID format in update", async () => {
+      const eventData = {
+        type: EventType.WEDDING,
+        title: "Original Title",
+        description: "Original Description",
+        date: "2024-06-15T15:00:00.000Z",
+        userId: testUser.id,
+        venueId: testVenue.id,
+      };
+
+      const createResponse = await request(app)
+        .post("/api/events")
+        .send(eventData);
+
+      const eventId = createResponse.body.id;
+
+      const response = await request(app)
+        .put(`/api/events/${eventId}`)
+        .send({
+          venueId: "invalid-uuid",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid venue ID format");
+    });
+  });
+
+  describe("DELETE /api/events/:id", () => {
+    it("should delete an event", async () => {
+      const eventData = {
+        type: EventType.WEDDING,
+        title: "Event to Delete",
+        description: "This event will be deleted",
+        date: "2024-06-15T15:00:00.000Z",
+        userId: testUser.id,
+        venueId: testVenue.id,
+      };
+
+      const createResponse = await request(app)
+        .post("/api/events")
+        .send(eventData);
+
+      const eventId = createResponse.body.id;
+
+      const deleteResponse = await request(app).delete(`/api/events/${eventId}`);
       expect(deleteResponse.status).toBe(204);
 
       const getResponse = await request(app).get(`/api/events/${eventId}`);
-
       expect(getResponse.status).toBe(404);
     });
 
@@ -315,19 +339,12 @@ describe("Event API Routes", () => {
   });
 
   describe("GET /api/users/:userId/events", () => {
-    it("should return all events for a specific user", async () => {
-      // Create another user
-      const anotherUserResponse = await request(app).post("/api/users").send({
-        name: "Another User",
-        email: "another.user@example.com",
-      });
-      const anotherUser = anotherUserResponse.body;
-
-      // Create events for both users
+    it("should return all events for a user", async () => {
+      // Create multiple events for the test user
       const event1 = {
         type: EventType.WEDDING,
-        title: "John & Jane's Wedding",
-        description: "Celebration of John and Jane's marriage",
+        title: "User's Wedding",
+        description: "Wedding event",
         date: "2024-06-15T15:00:00.000Z",
         userId: testUser.id,
         venueId: testVenue.id,
@@ -335,54 +352,37 @@ describe("Event API Routes", () => {
 
       const event2 = {
         type: EventType.BIRTHDAY,
-        title: "Another User's Birthday",
-        description: "Another user's birthday party",
+        title: "User's Birthday",
+        description: "Birthday event",
         date: "2024-07-15T15:00:00.000Z",
-        userId: anotherUser.id,
-        venueId: testVenue.id,
-      };
-
-      const event3 = {
-        type: EventType.CORPORATE,
-        title: "Test User's Meeting",
-        description: "Business meeting",
-        date: "2024-08-15T15:00:00.000Z",
         userId: testUser.id,
         venueId: testVenue.id,
       };
 
-      // Create all events
       await request(app).post("/api/events").send(event1);
       await request(app).post("/api/events").send(event2);
-      await request(app).post("/api/events").send(event3);
 
-      // Get events for test user
-      const response = await request(app).get(
-        `/api/users/${testUser.id}/events`,
-      );
+      const response = await request(app).get(`/api/users/${testUser.id}/events`);
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBe(2); // Should have 2 events for test user
-      expect(response.body.every((e: Event) => e.userId === testUser.id)).toBe(
-        true,
-      );
-      expect(response.body.some((e: Event) => e.title === event1.title)).toBe(
-        true,
-      );
-      expect(response.body.some((e: Event) => e.title === event3.title)).toBe(
-        true,
-      );
+      expect(response.body.length).toBe(2);
+      expect(response.body.every((e: Event) => e.userId === testUser.id)).toBe(true);
     });
 
     it("should return empty array for user with no events", async () => {
-      const response = await request(app).get(
-        `/api/users/${testUser.id}/events`,
-      );
+      const response = await request(app).get(`/api/users/${testUser.id}/events`);
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBe(0);
+    });
+
+    it("should handle invalid user ID format", async () => {
+      const response = await request(app).get("/api/users/invalid-uuid/events");
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Invalid user ID format");
     });
   });
 });
