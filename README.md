@@ -42,22 +42,31 @@ For detailed API examples and usage with cURL commands, see [API Examples](docs/
   - Response: Array of user objects
 
 - **GET /api/users/:id**
-  - Get a specific user by ID
+  - Get a specific user by ID (UUID format)
   - Response: Single user object
+  - Error Responses:
+    - 400: Invalid UUID format
+    - 404: User not found
 
 - **POST /api/users**
   - Create a new user
   - Body: `{ "name": "string", "email": "string" }`
-  - Response: Created user object
+  - Response: Created user object with UUID
 
 - **PUT /api/users/:id**
   - Update a user
   - Body: `{ "name": "string", "email": "string" }`
   - Response: Updated user object
+  - Error Responses:
+    - 400: Invalid UUID format
+    - 404: User not found
 
 - **DELETE /api/users/:id**
   - Delete a user
   - Response: 204 No Content
+  - Error Responses:
+    - 400: Invalid UUID format
+    - 404: User not found
 
 ## Types
 
@@ -65,11 +74,11 @@ For detailed API examples and usage with cURL commands, see [API Examples](docs/
 
 ```typescript
 interface User {
-  id: number;          // Unique identifier
-  name: string;        // User's full name
-  email: string;       // User's email address
-  createdAt: Date;     // Creation timestamp
-  updatedAt?: Date;    // Last update timestamp (optional)
+  id: string;         // UUID string
+  name: string;       // User's full name
+  email: string;      // User's email address
+  createdAt: Date;    // Creation timestamp
+  updatedAt?: Date;   // Last update timestamp (optional)
 }
 ```
 
@@ -96,6 +105,8 @@ src/
   │   └── userRoutes.ts
   ├── controllers/       # Route handlers
   │   └── userController.ts
+  ├── utils/            # Utility functions
+  │   └── uuid.ts       # UUID generation and validation
   └── types/            # Type definitions
       └── user.ts
 ```
@@ -106,6 +117,7 @@ The project uses TypeScript for better type safety and developer experience. Key
 
 - Strong typing for all entities and DTOs
 - Type-safe Express.js route handlers
+- UUID-based entity IDs with validation
 - Automatic compilation to JavaScript
 - Development server with hot reload
 - TypeScript configuration in `tsconfig.json`

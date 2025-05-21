@@ -18,8 +18,8 @@ curl http://localhost:3000/api/users \
 ### Get User by ID
 
 ```bash
-# Replace {id} with the actual user ID
-curl http://localhost:3000/api/users/1 \
+# Replace {id} with a valid UUID
+curl http://localhost:3000/api/users/123e4567-e89b-12d3-a456-426614174000 \
   -H "Content-Type: application/json"
 ```
 
@@ -38,8 +38,8 @@ curl http://localhost:3000/api/users \
 ### Update User
 
 ```bash
-# Replace {id} with the actual user ID
-curl http://localhost:3000/api/users/1 \
+# Replace {id} with a valid UUID
+curl http://localhost:3000/api/users/123e4567-e89b-12d3-a456-426614174000 \
   -X PUT \
   -H "Content-Type: application/json" \
   -d '{
@@ -48,7 +48,7 @@ curl http://localhost:3000/api/users/1 \
   }'
 
 # Update single field
-curl http://localhost:3000/api/users/1 \
+curl http://localhost:3000/api/users/123e4567-e89b-12d3-a456-426614174000 \
   -X PUT \
   -H "Content-Type: application/json" \
   -d '{
@@ -59,8 +59,8 @@ curl http://localhost:3000/api/users/1 \
 ### Delete User
 
 ```bash
-# Replace {id} with the actual user ID
-curl http://localhost:3000/api/users/1 \
+# Replace {id} with a valid UUID
+curl http://localhost:3000/api/users/123e4567-e89b-12d3-a456-426614174000 \
   -X DELETE \
   -H "Content-Type: application/json"
 ```
@@ -78,17 +78,19 @@ curl http://localhost:3000/api/users \
     "name": "Jane Smith",
     "email": "jane.smith@example.com"
   }'
+
+# Response will include a UUID for the new user
 ```
 
-2. Get the created user (assuming ID is 1):
+2. Get the created user (using the UUID from the create response):
 ```bash
-curl http://localhost:3000/api/users/1 \
+curl http://localhost:3000/api/users/123e4567-e89b-12d3-a456-426614174000 \
   -H "Content-Type: application/json"
 ```
 
 3. Update the user's email:
 ```bash
-curl http://localhost:3000/api/users/1 \
+curl http://localhost:3000/api/users/123e4567-e89b-12d3-a456-426614174000 \
   -X PUT \
   -H "Content-Type: application/json" \
   -d '{
@@ -98,20 +100,20 @@ curl http://localhost:3000/api/users/1 \
 
 4. Verify the update:
 ```bash
-curl http://localhost:3000/api/users/1 \
+curl http://localhost:3000/api/users/123e4567-e89b-12d3-a456-426614174000 \
   -H "Content-Type: application/json"
 ```
 
 5. Delete the user:
 ```bash
-curl http://localhost:3000/api/users/1 \
+curl http://localhost:3000/api/users/123e4567-e89b-12d3-a456-426614174000 \
   -X DELETE \
   -H "Content-Type: application/json"
 ```
 
 6. Verify deletion (should return 404):
 ```bash
-curl http://localhost:3000/api/users/1 \
+curl http://localhost:3000/api/users/123e4567-e89b-12d3-a456-426614174000 \
   -H "Content-Type: application/json"
 ```
 
@@ -123,7 +125,7 @@ curl http://localhost:3000/api/users/1 \
   ```json
   [
     {
-      "id": 1,
+      "id": "123e4567-e89b-12d3-a456-426614174000",
       "name": "John Doe",
       "email": "john.doe@example.com",
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -135,7 +137,7 @@ curl http://localhost:3000/api/users/1 \
 - GET /api/users/{id}
   ```json
   {
-    "id": 1,
+    "id": "123e4567-e89b-12d3-a456-426614174000",
     "name": "John Doe",
     "email": "john.doe@example.com",
     "createdAt": "2024-01-01T00:00:00.000Z",
@@ -146,7 +148,7 @@ curl http://localhost:3000/api/users/1 \
 - POST /api/users
   ```json
   {
-    "id": 1,
+    "id": "123e4567-e89b-12d3-a456-426614174000",
     "name": "John Doe",
     "email": "john.doe@example.com",
     "createdAt": "2024-01-01T00:00:00.000Z"
@@ -162,7 +164,14 @@ curl http://localhost:3000/api/users/1 \
   }
   ```
 
-- Bad Request (400)
+- Bad Request (400) - Invalid UUID
+  ```json
+  {
+    "message": "Invalid user ID format"
+  }
+  ```
+
+- Bad Request (400) - Missing Fields
   ```json
   {
     "message": "Name and email are required"
