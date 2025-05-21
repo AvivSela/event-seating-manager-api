@@ -1,28 +1,28 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
   getAllEvents,
   getEventById,
   createEvent,
   updateEvent,
   deleteEvent,
-  getEventsByUserId
-} from '../controllers/eventController';
+  getEventsByUserId,
+} from "../controllers/eventController";
 
 const router = Router();
 
 // GET all events
-router.get('/', getAllEvents);
+router.get("/", getAllEvents);
 
 // GET single event by ID
-router.get('/:id', getEventById);
+router.get("/:id", getEventById);
 
 // POST create new event
-router.post('/', createEvent);
+router.post("/", createEvent);
 
 // PUT update event
-router.put('/:id', updateEvent);
+router.put("/:id", updateEvent);
 
 // DELETE event
-router.delete('/:id', deleteEvent);
+router.delete("/:id", deleteEvent);
 
-export default router; 
+export default router;

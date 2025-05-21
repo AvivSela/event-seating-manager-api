@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { User, CreateUserDto, UpdateUserDto } from '../types/user';
+import { Request, Response } from "express";
+import { User, CreateUserDto, UpdateUserDto } from "../types/user";
 
 let users: User[] = [];
 let nextId = 1;
@@ -9,9 +9,9 @@ export const getAllUsers = (_req: Request, res: Response): void => {
 };
 
 export const getUserById = (req: Request, res: Response): void => {
-  const user = users.find(u => u.id === parseInt(req.params.id));
+  const user = users.find((u) => u.id === parseInt(req.params.id));
   if (!user) {
-    res.status(404).json({ message: 'User not found' });
+    res.status(404).json({ message: "User not found" });
     return;
   }
   res.json(user);
@@ -19,12 +19,12 @@ export const getUserById = (req: Request, res: Response): void => {
 
 export const createUser = (
   req: Request<{}, {}, CreateUserDto>,
-  res: Response
+  res: Response,
 ): void => {
   const { name, email } = req.body;
-  
+
   if (!name || !email) {
-    res.status(400).json({ message: 'Name and email are required' });
+    res.status(400).json({ message: "Name and email are required" });
     return;
   }
 
@@ -32,7 +32,7 @@ export const createUser = (
     id: nextId++,
     name,
     email,
-    createdAt: new Date()
+    createdAt: new Date(),
   };
 
   users.push(newUser);
@@ -41,14 +41,14 @@ export const createUser = (
 
 export const updateUser = (
   req: Request<{ id: string }, {}, UpdateUserDto>,
-  res: Response
+  res: Response,
 ): void => {
   const { name, email } = req.body;
   const userId = parseInt(req.params.id);
-  
-  const userIndex = users.findIndex(u => u.id === userId);
+
+  const userIndex = users.findIndex((u) => u.id === userId);
   if (userIndex === -1) {
-    res.status(404).json({ message: 'User not found' });
+    res.status(404).json({ message: "User not found" });
     return;
   }
 
@@ -56,7 +56,7 @@ export const updateUser = (
     ...users[userIndex],
     name: name || users[userIndex].name,
     email: email || users[userIndex].email,
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   users[userIndex] = updatedUser;
@@ -65,13 +65,13 @@ export const updateUser = (
 
 export const deleteUser = (req: Request, res: Response): void => {
   const userId = parseInt(req.params.id);
-  const userIndex = users.findIndex(u => u.id === userId);
-  
+  const userIndex = users.findIndex((u) => u.id === userId);
+
   if (userIndex === -1) {
-    res.status(404).json({ message: 'User not found' });
+    res.status(404).json({ message: "User not found" });
     return;
   }
 
-  users = users.filter(u => u.id !== userId);
+  users = users.filter((u) => u.id !== userId);
   res.status(204).send();
-}; 
+};

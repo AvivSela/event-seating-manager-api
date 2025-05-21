@@ -18,13 +18,13 @@ export interface BaseVenueFeature {
 }
 
 export interface TableFeature extends BaseVenueFeature {
-  type: 'table';
+  type: "table";
   numberOfSeats: number;
   guests?: Guest[];
 }
 
 export interface OtherFeature extends BaseVenueFeature {
-  type: 'stage' | 'bar' | 'entrance';
+  type: "stage" | "bar" | "entrance";
 }
 
 export type VenueFeature = TableFeature | OtherFeature;
@@ -62,4 +62,4 @@ export interface UpdateVenueDto {
   capacity?: number;
   description?: string;
   map?: VenueMap;
-} 
+}

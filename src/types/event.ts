@@ -1,14 +1,14 @@
 export enum EventType {
-  WEDDING = 'WEDDING',
-  BIRTHDAY = 'BIRTHDAY',
-  CORPORATE = 'CORPORATE',
-  OTHER = 'OTHER'
+  WEDDING = "WEDDING",
+  BIRTHDAY = "BIRTHDAY",
+  CORPORATE = "CORPORATE",
+  OTHER = "OTHER",
 }
 
 export interface Event {
   id: number;
-  userId: number;          // Reference to the owner/user
-  venueId: number;         // Reference to the venue
+  userId: number; // Reference to the owner/user
+  venueId: number; // Reference to the venue
   type: EventType;
   title: string;
   description: string;
@@ -21,14 +21,14 @@ export interface CreateEventDto {
   type: EventType;
   title: string;
   description: string;
-  date: string;           // ISO date string
-  venueId: number;        // Reference to the venue
+  date: string; // ISO date string
+  venueId: number; // Reference to the venue
 }
 
 export interface UpdateEventDto {
   type?: EventType;
   title?: string;
   description?: string;
-  date?: string;          // ISO date string
-  venueId?: number;       // Reference to the venue
-} 
+  date?: string; // ISO date string
+  venueId?: number; // Reference to the venue
+}
