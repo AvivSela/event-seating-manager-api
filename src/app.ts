@@ -4,7 +4,6 @@ import morgan from "morgan";
 import userRoutes from "./routes/userRoutes";
 import eventRoutes from "./routes/eventRoutes";
 import venueRoutes from "./routes/venueRoutes";
-import { errorHandler } from "./utils/errors/errorHandler";
 
 const app: Express = express();
 
@@ -17,8 +16,5 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/venues", venueRoutes);
-
-// Error handling
-app.use(errorHandler);
 
 export default app;
