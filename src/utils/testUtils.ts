@@ -20,12 +20,3 @@ export const clearEvents = (): void => {
 export const clearVenues = (): void => {
   venues.length = 0;
 };
-
-/**
- * Clears all test data (events and venues)
- * This function should only be used in test environments
- */
-export const clearAllTestData = (): void => {
-  clearEvents();
-  clearVenues();
-};
