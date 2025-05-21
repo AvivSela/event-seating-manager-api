@@ -22,6 +22,9 @@ export interface BaseVenueFeature {
 export interface TableFeature extends BaseVenueFeature {
   type: "table";
   numberOfSeats: number;
+  shape: "round" | "rectangular" | "square";
+  tableNumber: string;
+  category?: string;
   guests?: Guest[];
 }
 

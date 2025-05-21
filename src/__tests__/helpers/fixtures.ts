@@ -49,6 +49,8 @@ export const validVenueMap: VenueMap = {
       position: { x: 15, y: 20 },
       dimensions: { width: 3, height: 3 },
       numberOfSeats: 6,
+      shape: "round",
+      tableNumber: "T1",
       guests: [
         {
           id: '1',
