@@ -38,11 +38,36 @@ The venue map has the following structure:
         "width": number,
         "height": number
       },
-      "rotation": number (optional)
+      "rotation": number (optional),
+      // Additional properties based on feature type
+      // For type: "table"
+      "numberOfSeats": number,
+      "guests": [
+        {
+          "id": string,
+          "name": string,
+          "seatNumber": number
+        }
+      ]
     }
   ]
 }
 ```
+
+### Feature Types
+
+1. Table Feature
+   - `type`: Must be "table"
+   - `numberOfSeats`: Number of seats at the table (required for tables)
+   - `guests`: Array of assigned guests (optional)
+   - Each guest object contains:
+     - `id`: Unique identifier of the guest
+     - `name`: Name of the guest
+     - `seatNumber`: Assigned seat number at the table (1 to numberOfSeats)
+
+2. Other Features (stage, bar, etc.)
+   - `type`: Feature type identifier
+   - Basic properties only (position, dimensions, rotation)
 
 ## Validation Rules
 

@@ -1,20 +1,38 @@
-export interface VenueFeature {
-  type: 'stage' | 'bar' | 'entrance' | 'restroom' | 'emergency_exit';
+export interface Guest {
+  id: string;
+  name: string;
+  seatNumber: number;
+}
+
+export interface BaseVenueFeature {
+  type: string;
   position: {
     x: number;
     y: number;
   };
-  dimensions?: {
+  dimensions: {
     width: number;
     height: number;
   };
-  rotation?: number; // in degrees
+  rotation?: number;
 }
+
+export interface TableFeature extends BaseVenueFeature {
+  type: 'table';
+  numberOfSeats: number;
+  guests?: Guest[];
+}
+
+export interface OtherFeature extends BaseVenueFeature {
+  type: 'stage' | 'bar' | 'entrance';
+}
+
+export type VenueFeature = TableFeature | OtherFeature;
 
 export interface VenueMap {
   dimensions: {
-    width: number;  // in meters
-    height: number; // in meters
+    width: number;
+    height: number;
   };
   features: VenueFeature[];
 }
@@ -25,9 +43,9 @@ export interface Venue {
   address: string;
   capacity: number;
   description?: string;
-  map?: VenueMap;      // Making it optional for backward compatibility
-  createdAt: Date;
-  updatedAt?: Date;
+  map?: VenueMap;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CreateVenueDto {

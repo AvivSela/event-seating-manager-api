@@ -1,6 +1,6 @@
 import request from 'supertest';
 import app from '../app';
-import { Venue, VenueMap } from '../types/venue';
+import { Venue, VenueMap, VenueFeature } from '../types/venue';
 import { clearVenues } from '../controllers/venueController';
 
 describe('Venue API Routes', () => {
@@ -207,16 +207,34 @@ describe('Venue API Routes', () => {
           type: 'bar',
           position: { x: 45, y: 15 },
           dimensions: { width: 5, height: 2 }
+        },
+        {
+          type: 'table',
+          position: { x: 15, y: 20 },
+          dimensions: { width: 3, height: 3 },
+          numberOfSeats: 6,
+          guests: [
+            {
+              id: '1',
+              name: 'John Doe',
+              seatNumber: 1
+            },
+            {
+              id: '2',
+              name: 'Jane Smith',
+              seatNumber: 2
+            }
+          ]
         }
       ]
     };
 
-    it('should create a venue with map data', async () => {
+    it('should create a venue with map data including tables', async () => {
       const venueData = {
         name: 'Mapped Venue',
         address: '123 Map St',
         capacity: 200,
-        description: 'A venue with map',
+        description: 'A venue with map and tables',
         map: validVenueMap
       };
 
@@ -226,6 +244,69 @@ describe('Venue API Routes', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.map).toEqual(validVenueMap);
+      const tableFeature = response.body.map.features.find((f: VenueFeature) => f.type === 'table');
+      expect(tableFeature).toBeDefined();
+      expect(tableFeature.numberOfSeats).toBe(6);
+      expect(tableFeature.guests).toHaveLength(2);
+    });
+
+    it('should reject table feature without required numberOfSeats', async () => {
+      const invalidTableMap = {
+        dimensions: { width: 50, height: 30 },
+        features: [
+          {
+            type: 'table',
+            position: { x: 15, y: 20 },
+            dimensions: { width: 3, height: 3 }
+            // missing numberOfSeats
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/venues')
+        .send({
+          name: 'Invalid Table Venue',
+          address: '123 Map St',
+          capacity: 200,
+          map: invalidTableMap
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Table features must specify numberOfSeats');
+    });
+
+    it('should validate guest seatNumber against numberOfSeats', async () => {
+      const invalidGuestMap = {
+        dimensions: { width: 50, height: 30 },
+        features: [
+          {
+            type: 'table',
+            position: { x: 15, y: 20 },
+            dimensions: { width: 3, height: 3 },
+            numberOfSeats: 4,
+            guests: [
+              {
+                id: '1',
+                name: 'John Doe',
+                seatNumber: 5 // Invalid seat number > numberOfSeats
+              }
+            ]
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/venues')
+        .send({
+          name: 'Invalid Guest Venue',
+          address: '123 Map St',
+          capacity: 200,
+          map: invalidGuestMap
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Guest seat number must be between 1 and numberOfSeats');
     });
 
     it('should reject invalid map dimensions', async () => {
