@@ -1,3 +1,5 @@
+import { BaseEntity } from './base';
+
 export interface Guest {
   id: string;
   name: string;
@@ -37,15 +39,12 @@ export interface VenueMap {
   features: VenueFeature[];
 }
 
-export interface Venue {
-  id: number;
+export interface Venue extends BaseEntity {
   name: string;
   address: string;
   capacity: number;
   description?: string;
   map?: VenueMap;
-  createdAt: string;
-  updatedAt?: string;
 }
 
 export interface CreateVenueDto {

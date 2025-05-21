@@ -6,9 +6,9 @@ import {
   VenueMap,
   VenueFeature,
 } from "../types/venue";
+import { generateUUID, isValidUUID } from "../utils/uuid";
 
 export let venues: Venue[] = [];
-let nextId = 1;
 
 // Validate map data
 function validateVenueMap(map: VenueMap | undefined): void {
@@ -48,7 +48,7 @@ function validateVenueMap(map: VenueMap | undefined): void {
         feature.guests.forEach((guest) => {
           if (
             guest.seatNumber < 1 ||
-            guest.seatNumber > feature.numberOfSeats
+            guest.seatNumber > feature.numberOfSeats!
           ) {
             throw new Error(
               "Guest seat number must be between 1 and numberOfSeats",
@@ -67,14 +67,18 @@ export const getAllVenues = (_req: Request, res: Response): void => {
 
 // Get venue by ID
 export const getVenueById = (req: Request, res: Response): void => {
-  const venueId = parseInt(req.params.id);
-  const venue = venues.find((v) => v.id === venueId);
+  const venueId = req.params.id;
 
+  if (!isValidUUID(venueId)) {
+    res.status(400).json({ message: "Invalid venue ID format" });
+    return;
+  }
+
+  const venue = venues.find((v) => v.id === venueId);
   if (!venue) {
     res.status(404).json({ message: "Venue not found" });
     return;
   }
-
   res.json(venue);
 };
 
@@ -93,13 +97,13 @@ export const createVenue = (req: Request, res: Response): void => {
     validateVenueMap(map);
 
     const venue: Venue = {
-      id: nextId++,
+      id: generateUUID(),
       name,
       address,
       capacity,
       description: description || "",
       map,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
     venues.push(venue);
@@ -116,10 +120,16 @@ export const createVenue = (req: Request, res: Response): void => {
 // Update venue
 export const updateVenue = (req: Request, res: Response): void => {
   try {
-    const id = parseInt(req.params.id);
+    const venueId = req.params.id;
+
+    if (!isValidUUID(venueId)) {
+      res.status(400).json({ message: "Invalid venue ID format" });
+      return;
+    }
+
     const { name, address, capacity, description, map } = req.body;
 
-    const venueIndex = venues.findIndex((v) => v.id === id);
+    const venueIndex = venues.findIndex((v) => v.id === venueId);
     if (venueIndex === -1) {
       res.status(404).json({ message: "Venue not found" });
       return;
@@ -134,7 +144,7 @@ export const updateVenue = (req: Request, res: Response): void => {
       capacity: capacity || venues[venueIndex].capacity,
       description: description || venues[venueIndex].description,
       map: map || venues[venueIndex].map,
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(),
     };
 
     venues[venueIndex] = updatedVenue;
@@ -150,9 +160,14 @@ export const updateVenue = (req: Request, res: Response): void => {
 
 // Delete venue
 export const deleteVenue = (req: Request, res: Response): void => {
-  const venueId = parseInt(req.params.id);
-  const venueIndex = venues.findIndex((v) => v.id === venueId);
+  const venueId = req.params.id;
 
+  if (!isValidUUID(venueId)) {
+    res.status(400).json({ message: "Invalid venue ID format" });
+    return;
+  }
+
+  const venueIndex = venues.findIndex((v) => v.id === venueId);
   if (venueIndex === -1) {
     res.status(404).json({ message: "Venue not found" });
     return;

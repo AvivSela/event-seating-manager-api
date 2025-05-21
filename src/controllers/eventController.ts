@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import { Event, CreateEventDto, UpdateEventDto } from "../types/event";
 import { venues } from "./venueController";
+import { generateUUID, isValidUUID } from "../utils/uuid";
 
 export let events: Event[] = [];
-let nextId = 1;
 
 // Get all events
 export const getAllEvents = (_req: Request, res: Response): void => {
@@ -12,27 +12,37 @@ export const getAllEvents = (_req: Request, res: Response): void => {
 
 // Get events by user ID
 export const getEventsByUserId = (req: Request, res: Response): void => {
-  const userId = parseInt(req.params.userId);
-  const userEvents = events.filter((event) => event.userId === userId);
+  const userId = req.params.userId;
+
+  if (!isValidUUID(userId)) {
+    res.status(400).json({ message: "Invalid user ID format" });
+    return;
+  }
+
+  const userEvents = events.filter((e) => e.userId === userId);
   res.json(userEvents);
 };
 
 // Get event by ID
 export const getEventById = (req: Request, res: Response): void => {
-  const eventId = parseInt(req.params.id);
-  const event = events.find((e) => e.id === eventId);
+  const eventId = req.params.id;
 
+  if (!isValidUUID(eventId)) {
+    res.status(400).json({ message: "Invalid event ID format" });
+    return;
+  }
+
+  const event = events.find((e) => e.id === eventId);
   if (!event) {
     res.status(404).json({ message: "Event not found" });
     return;
   }
-
   res.json(event);
 };
 
 // Create new event
 export const createEvent = (
-  req: Request<{}, {}, CreateEventDto & { userId: number }>,
+  req: Request<{}, {}, CreateEventDto>,
   res: Response,
 ): void => {
   const { type, title, description, date, userId, venueId } = req.body;
@@ -44,6 +54,16 @@ export const createEvent = (
     return;
   }
 
+  if (!isValidUUID(userId)) {
+    res.status(400).json({ message: "Invalid user ID format" });
+    return;
+  }
+
+  if (!isValidUUID(venueId)) {
+    res.status(400).json({ message: "Invalid venue ID format" });
+    return;
+  }
+
   // Validate venue exists
   const venue = venues.find((v) => v.id === venueId);
   if (!venue) {
@@ -52,7 +72,7 @@ export const createEvent = (
   }
 
   const newEvent: Event = {
-    id: nextId++,
+    id: generateUUID(),
     userId,
     venueId,
     type,
@@ -71,9 +91,14 @@ export const updateEvent = (
   req: Request<{ id: string }, {}, UpdateEventDto>,
   res: Response,
 ): void => {
-  const eventId = parseInt(req.params.id);
-  const eventIndex = events.findIndex((e) => e.id === eventId);
+  const eventId = req.params.id;
 
+  if (!isValidUUID(eventId)) {
+    res.status(400).json({ message: "Invalid event ID format" });
+    return;
+  }
+
+  const eventIndex = events.findIndex((e) => e.id === eventId);
   if (eventIndex === -1) {
     res.status(404).json({ message: "Event not found" });
     return;
@@ -81,8 +106,13 @@ export const updateEvent = (
 
   const { type, title, description, date, venueId } = req.body;
 
-  // Validate venue exists if venueId is being updated
   if (venueId !== undefined) {
+    if (!isValidUUID(venueId)) {
+      res.status(400).json({ message: "Invalid venue ID format" });
+      return;
+    }
+
+    // Validate venue exists
     const venue = venues.find((v) => v.id === venueId);
     if (!venue) {
       res.status(400).json({ message: "Venue not found" });
@@ -106,9 +136,14 @@ export const updateEvent = (
 
 // Delete event
 export const deleteEvent = (req: Request, res: Response): void => {
-  const eventId = parseInt(req.params.id);
-  const eventIndex = events.findIndex((e) => e.id === eventId);
+  const eventId = req.params.id;
 
+  if (!isValidUUID(eventId)) {
+    res.status(400).json({ message: "Invalid event ID format" });
+    return;
+  }
+
+  const eventIndex = events.findIndex((e) => e.id === eventId);
   if (eventIndex === -1) {
     res.status(404).json({ message: "Event not found" });
     return;

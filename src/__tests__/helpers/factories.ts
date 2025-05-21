@@ -3,7 +3,7 @@ import app from '../../app';
 import { User } from '../../types/user';
 import { Event } from '../../types/event';
 import { Venue } from '../../types/venue';
-import { testUser, testVenue, testEvent } from './fixtures';
+import { testUser, testVenue, testEvent, TEST_USER_ID, TEST_VENUE_ID } from './fixtures';
 
 export async function createTestUser(userData: Partial<User> = testUser): Promise<User> {
   const response = await request(app)
@@ -21,18 +21,15 @@ export async function createTestVenue(venueData: Partial<Venue> = testVenue): Pr
 
 export async function createTestEvent(
   eventData: Partial<Event> = testEvent,
-  userId?: number,
-  venueId?: number
+  userId: string = TEST_USER_ID,
+  venueId: string = TEST_VENUE_ID
 ): Promise<Event> {
-  const user = userId || (await createTestUser()).id;
-  const venue = venueId || (await createTestVenue()).id;
-
   const response = await request(app)
     .post('/api/events')
     .send({
       ...eventData,
-      userId: user,
-      venueId: venue
+      userId,
+      venueId
     });
   return response.body;
 } 

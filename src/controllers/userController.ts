@@ -1,15 +1,22 @@
 import { Request, Response } from "express";
 import { User, CreateUserDto, UpdateUserDto } from "../types/user";
+import { generateUUID, isValidUUID } from "../utils/uuid";
 
-let users: User[] = [];
-let nextId = 1;
+export let users: User[] = [];
 
 export const getAllUsers = (_req: Request, res: Response): void => {
   res.json(users);
 };
 
 export const getUserById = (req: Request, res: Response): void => {
-  const user = users.find((u) => u.id === parseInt(req.params.id));
+  const userId = req.params.id;
+  
+  if (!isValidUUID(userId)) {
+    res.status(400).json({ message: "Invalid user ID format" });
+    return;
+  }
+
+  const user = users.find((u) => u.id === userId);
   if (!user) {
     res.status(404).json({ message: "User not found" });
     return;
@@ -29,7 +36,7 @@ export const createUser = (
   }
 
   const newUser: User = {
-    id: nextId++,
+    id: generateUUID(),
     name,
     email,
     createdAt: new Date(),
@@ -44,7 +51,12 @@ export const updateUser = (
   res: Response,
 ): void => {
   const { name, email } = req.body;
-  const userId = parseInt(req.params.id);
+  const userId = req.params.id;
+
+  if (!isValidUUID(userId)) {
+    res.status(400).json({ message: "Invalid user ID format" });
+    return;
+  }
 
   const userIndex = users.findIndex((u) => u.id === userId);
   if (userIndex === -1) {
@@ -64,9 +76,14 @@ export const updateUser = (
 };
 
 export const deleteUser = (req: Request, res: Response): void => {
-  const userId = parseInt(req.params.id);
-  const userIndex = users.findIndex((u) => u.id === userId);
+  const userId = req.params.id;
 
+  if (!isValidUUID(userId)) {
+    res.status(400).json({ message: "Invalid user ID format" });
+    return;
+  }
+
+  const userIndex = users.findIndex((u) => u.id === userId);
   if (userIndex === -1) {
     res.status(404).json({ message: "User not found" });
     return;
