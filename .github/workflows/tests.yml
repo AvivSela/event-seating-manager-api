@@ -77,7 +77,7 @@ jobs:
       
     - name: Run tests
       id: run-tests
-      run: yarn test
+      run: yarn test:coverage
       
     - name: Upload test results
       if: always() && steps.run-tests.outcome == 'failure'
@@ -88,3 +88,10 @@ jobs:
           **/junit.xml
           **/coverage/
         retention-days: 7 
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: AvivSela/event_seating_api
+        fail_ci_if_error: true 

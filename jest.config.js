@@ -19,8 +19,17 @@ module.exports = {
   // Cache babel transformations
   cache: true,
   
-  // Optimize coverage collection
-  collectCoverage: false,
+  // Coverage configuration
+  collectCoverage: true,
+  coverageDirectory: '<rootDir>/coverage',
+  coverageReporters: ['json', 'lcov', 'text', 'clover'],
+  collectCoverageFrom: [
+    'src/**/*.{js,ts}',
+    '!src/**/*.d.ts',
+    '!src/**/*.test.{js,ts}',
+    '!src/__tests__/**/*',
+    '!**/node_modules/**'
+  ],
   
   // Setup test environment
   testEnvironment: 'node',
