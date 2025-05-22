@@ -1,5 +1,7 @@
 # Event Seating API
 
+[![codecov](https://codecov.io/gh/AvivSela/event_seating_api/branch/main/graph/badge.svg)](https://codecov.io/gh/AvivSela/event_seating_api)
+
 A TypeScript-based REST API service for managing users, built with Express.js.
 
 ## Setup
