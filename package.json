@@ -3,18 +3,22 @@
   "private": true,
   "version": "1.0.0",
   "description": "Event seating management system",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "pnpm --parallel -r run dev",
-    "build": "pnpm -r run build",
-    "test": "pnpm -r run test",
-    "test:watch": "pnpm --parallel -r run test:watch",
-    "lint": "pnpm -r run lint"
+    "dev": "yarn workspaces foreach -pi run dev",
+    "build": "yarn workspaces foreach -pt run build",
+    "test": "yarn workspaces foreach -pt run test",
+    "test:watch": "yarn workspaces foreach -pi run test:watch",
+    "lint": "yarn workspaces foreach -pt run lint"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
-  }
+    "node": ">=18.0.0"
+  },
+  "packageManager": "yarn@4.9.1"
 }
