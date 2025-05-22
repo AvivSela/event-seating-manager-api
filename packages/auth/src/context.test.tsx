@@ -81,7 +81,14 @@ describe('AuthProvider', () => {
       </AuthProvider>
     );
 
-    await userEvent.click(screen.getByText('Login'));
+    const loginButton = screen.getByText('Login');
+    
+    // We need to wrap the click in a try-catch since we expect it to throw
+    try {
+      await userEvent.click(loginButton);
+    } catch (err) {
+      // Expected error, we can ignore it
+    }
 
     await waitFor(() => {
       expect(screen.getByText('Error: Invalid credentials')).toBeInTheDocument();

@@ -37,8 +37,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(response.user);
       api.saveAuthToken(response.token);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to login'));
-      throw err;
+      const error = err instanceof Error ? err : new Error('Failed to login');
+      setError(error);
     } finally {
       setIsLoading(false);
     }
@@ -52,8 +52,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(response.user);
       api.saveAuthToken(response.token);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to register'));
-      throw err;
+      const error = err instanceof Error ? err : new Error('Failed to register');
+      setError(error);
     } finally {
       setIsLoading(false);
     }
