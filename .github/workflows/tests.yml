@@ -5,22 +5,48 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18'
+  YARN_VERSION: '4.9.1'
 
 jobs:
   test:
+    name: Run Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      checks: write
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
     
-    - name: Setup Node.js
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
         
     - name: Enable Corepack
       run: corepack enable
 
+    - name: Setup Yarn
+      run: |
+        yarn set version ${{ env.YARN_VERSION }}
+        yarn config set nodeLinker node-modules
+        yarn config set checksumBehavior update
+        yarn config set enableGlobalCache true
+        
     - name: Get Yarn cache directory path
       id: yarn-cache-dir-path
       run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
@@ -28,20 +54,29 @@ jobs:
     - name: Cache Yarn dependencies
       uses: actions/cache@v4
       with:
-        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        path: |
+          ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          '**/node_modules'
         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-
         
     - name: Install dependencies
-      run: |
-        yarn set version 4.9.1
-        yarn config set nodeLinker node-modules
-        yarn config set checksumBehavior update
-        yarn install --mode skip-build
+      run: yarn install --mode skip-build --prefer-offline
       env:
         YARN_ENABLE_HARDENED_MODE: 1
         YARN_ENABLE_IMMUTABLE_INSTALLS: false
       
     - name: Run tests
-      run: yarn test 
+      id: run-tests
+      run: yarn test
+      
+    - name: Upload test results
+      if: always() && steps.run-tests.outcome == 'failure'
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          **/junit.xml
+          **/coverage/
+        retention-days: 7 
