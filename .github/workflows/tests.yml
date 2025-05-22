@@ -63,9 +63,12 @@ jobs:
         yarn config set nodeLinker node-modules
         yarn config set checksumBehavior update
         yarn config set enableGlobalCache true
+        yarn config set enableNetwork false
         
     - name: Install dependencies
-      run: yarn install --mode skip-build --prefer-offline
+      run: |
+        yarn config set enableNetwork true
+        yarn install --mode skip-build --check-cache
       env:
         YARN_ENABLE_HARDENED_MODE: 1
         YARN_ENABLE_IMMUTABLE_INSTALLS: false
