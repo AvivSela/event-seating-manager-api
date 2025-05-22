@@ -19,4 +19,7 @@ ignore:
   - "**/*.spec.ts"
   - "**/test/**"
   - "**/tests/**"
-  - "**/__tests__/**" 
+  - "**/__tests__/**"
+  - "apps/web/**/*"    # Ignore UI package
+  - "packages/auth/**/*"  # Ignore auth package 
+
