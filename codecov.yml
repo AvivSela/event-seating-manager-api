@@ -22,3 +22,4 @@ ignore:
   - "**/__tests__/**"
   - "apps/web/**/*"    # Ignore UI package
   - "packages/auth/**/*"  # Ignore auth package 
+
