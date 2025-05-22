@@ -8,11 +8,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "yarn workspaces foreach -pi run dev",
-    "build": "yarn workspaces foreach -pt run build",
-    "test": "yarn workspaces foreach -pt run test",
-    "test:watch": "yarn workspaces foreach -pi run test:watch",
-    "lint": "yarn workspaces foreach -pt run lint"
+    "dev": "yarn workspaces foreach --all --parallel run dev",
+    "build": "yarn workspaces foreach --all run build",
+    "test": "yarn workspaces foreach --all run test",
+    "test:watch": "yarn workspaces foreach --all --parallel run test:watch",
+    "lint": "yarn workspaces foreach --all run lint"
   },
   "keywords": [],
   "author": "",
