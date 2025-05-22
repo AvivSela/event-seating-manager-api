@@ -61,17 +61,19 @@ jobs:
     - name: Setup Yarn
       run: |
         yarn config set nodeLinker node-modules
-        yarn config set checksumBehavior update
         yarn config set enableGlobalCache true
-        yarn config set enableNetwork false
+        yarn config set compressionLevel 0
+        
+    - name: Clean Yarn cache
+      run: yarn cache clean --all
         
     - name: Install dependencies
       run: |
-        yarn config set enableNetwork true
-        yarn install --mode skip-build --check-cache
+        YARN_CHECKSUM_BEHAVIOR=update yarn install --mode skip-build --inline-builds
       env:
         YARN_ENABLE_HARDENED_MODE: 1
         YARN_ENABLE_IMMUTABLE_INSTALLS: false
+        YARN_CHECKSUM_BEHAVIOR: update
       
     - name: Run tests
       id: run-tests
