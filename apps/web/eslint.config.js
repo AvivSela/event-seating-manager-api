@@ -23,6 +23,13 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      'no-unused-vars': 'error',
+      'no-unreachable': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { 
+        vars: 'all',
+        args: 'after-used',
+        ignoreRestSiblings: true
+      }],
     },
   },
 )
