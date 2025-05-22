@@ -880,6 +880,8 @@ __metadata:
     axios: "npm:^1.6.7"
     eslint: "npm:^8.56.0"
     jwt-decode: "npm:^4.0.0"
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
     tsup: "npm:^8.0.2"
     typescript: "npm:^5.3.3"
     vitest: "npm:^3.1.4"
@@ -8017,7 +8019,7 @@ __metadata:
     supports-preserve-symlinks-flag: "npm:^1.0.0"
   bin:
     resolve: bin/resolve
-  checksum: 10c0/5294a391f859ecc2b22ec1394f6b0780dba8d8e85f2a425779046c2bc79127c345d5dfa418438b8467a5e83051897e72e61f6ede1d0e28ff35cea1451aaa38fd
+  checksum: 10c0/080ec8e1824d876269a297870037b197e080b93e8665e235e704d5c147c567817e79a40c08c2f63845f0785f6dd9d3004601ff1838640f10a995178cfdec1b5d
   languageName: node
   linkType: hard
 
@@ -9226,7 +9228,7 @@ __metadata:
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/b30719f1ff13695206100ddd74a4785fc502abdd37af61c86583dda487da7325d11c6c7a444a18d8fe4326de5d87b02d82c10e11300d209f36e4e87785269100
+  checksum: 10c0/208493e251987445c7690d807988ae50530c39a706a185905cd3c2c29f707ac3c7e239cede448f9500b289528c020834b7279f98fe674f05ad4bf630d2218aeb
   languageName: node
   linkType: hard
 
