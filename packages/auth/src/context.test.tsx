@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from './context';
@@ -34,6 +34,10 @@ function TestComponent() {
 }
 
 describe('AuthProvider', () => {
+  beforeEach(() => {
+    vi.mocked(api.getAuthToken).mockReturnValue(null);
+  });
+
   it('provides authentication context', () => {
     render(
       <AuthProvider>
@@ -51,6 +55,7 @@ describe('AuthProvider', () => {
     const mockResponse = { user: mockUser, token: 'test-token' };
     
     vi.mocked(api.login).mockResolvedValueOnce(mockResponse);
+    const user = userEvent.setup();
 
     render(
       <AuthProvider>
@@ -58,7 +63,9 @@ describe('AuthProvider', () => {
       </AuthProvider>
     );
 
-    await userEvent.click(screen.getByText('Login'));
+    await act(async () => {
+      await user.click(screen.getByText('Login'));
+    });
 
     await waitFor(() => {
       expect(screen.getByText(`User: ${mockUser.email}`)).toBeInTheDocument();
@@ -74,6 +81,7 @@ describe('AuthProvider', () => {
   it('handles login error', async () => {
     const error = new Error('Invalid credentials');
     vi.mocked(api.login).mockRejectedValueOnce(error);
+    const user = userEvent.setup();
 
     render(
       <AuthProvider>
@@ -81,14 +89,9 @@ describe('AuthProvider', () => {
       </AuthProvider>
     );
 
-    const loginButton = screen.getByText('Login');
-    
-    // We need to wrap the click in a try-catch since we expect it to throw
-    try {
-      await userEvent.click(loginButton);
-    } catch (err) {
-      // Expected error, we can ignore it
-    }
+    await act(async () => {
+      await user.click(screen.getByText('Login'));
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Error: Invalid credentials')).toBeInTheDocument();
@@ -100,6 +103,7 @@ describe('AuthProvider', () => {
     const mockResponse = { user: mockUser, token: 'test-token' };
     
     vi.mocked(api.register).mockResolvedValueOnce(mockResponse);
+    const user = userEvent.setup();
 
     render(
       <AuthProvider>
@@ -107,7 +111,9 @@ describe('AuthProvider', () => {
       </AuthProvider>
     );
 
-    await userEvent.click(screen.getByText('Register'));
+    await act(async () => {
+      await user.click(screen.getByText('Register'));
+    });
 
     await waitFor(() => {
       expect(screen.getByText(`User: ${mockUser.email}`)).toBeInTheDocument();
@@ -126,6 +132,7 @@ describe('AuthProvider', () => {
     const mockResponse = { user: mockUser, token: 'test-token' };
     
     vi.mocked(api.login).mockResolvedValueOnce(mockResponse);
+    const user = userEvent.setup();
 
     render(
       <AuthProvider>
@@ -133,12 +140,17 @@ describe('AuthProvider', () => {
       </AuthProvider>
     );
 
-    await userEvent.click(screen.getByText('Login'));
+    await act(async () => {
+      await user.click(screen.getByText('Login'));
+    });
+
     await waitFor(() => {
       expect(screen.getByText(`User: ${mockUser.email}`)).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Logout'));
+    await act(async () => {
+      await user.click(screen.getByText('Logout'));
+    });
 
     expect(api.logout).toHaveBeenCalled();
     expect(screen.queryByText(`User: ${mockUser.email}`)).not.toBeInTheDocument();
