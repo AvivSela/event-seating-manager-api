@@ -5,32 +5,61 @@ This document outlines the implementation plan for the Event Seating Management 
 
 ## Phase 1: Setup and Foundation (Week 1)
 
+### 1.0 Repository Organization (1 day)
+- [x] Set up monorepo structure with pnpm workspaces
+- [x] Create directory structure:
+  - `apps/api` for existing API server
+  - `apps/web` for new UI application
+  - `packages/` for shared code
+- [x] Move existing API code to `apps/api`
+- [x] Configure workspace-level tooling and scripts
+- [x] Update documentation with development workflows
+
 ### 1.1 Project Setup (1 day)
-- [ ] Initialize React project with TypeScript
-- [ ] Set up Vite for build tooling
-- [ ] Configure ESLint and Prettier
-- [ ] Set up testing environment (Vitest + React Testing Library)
-- [ ] Configure CI/CD pipeline
+- [x] Initialize React project with TypeScript
+- [x] Set up Vite for build tooling
+- [x] Configure ESLint and Prettier
+- [x] Set up testing environment (Vitest + React Testing Library)
+- [x] Configure CI/CD pipeline
 
 ### 1.2 Design System Setup (2 days)
-- [ ] Set up Tailwind CSS
-- [ ] Create color palette and typography system
-- [ ] Build basic component library:
-  - Buttons (primary, secondary, danger)
-  - Input fields
-  - Form elements
-  - Cards
-  - Modals
-  - Toast notifications
+- [x] Set up Tailwind CSS
+- [x] Create color palette and typography system
+- [x] Build basic component library:
+  - [x] Buttons (primary, secondary, danger)
+    - Variants: primary, secondary, danger, ghost
+    - Sizes: sm, md, lg
+    - Full width support
+  - [x] Input fields
+    - Variants and error states
+    - Sizes: sm, default, lg
+    - Error message display
+  - [x] Form elements
+    - [x] Checkbox (with indeterminate state)
+    - [x] Radio (with label and error states)
+    - [x] Select (with placeholder and sizes)
+  - [x] Cards
+    - Header, content, footer sections
+    - Variants: default, elevated
+    - Padding options
+  - [x] Modals
+    - Portal-based with backdrop
+    - Multiple sizes (sm, md, lg, xl)
+    - Keyboard support (Escape)
+    - Subcomponents for structure
+  - [x] Toast notifications
+    - Multiple types (success, error, warning, info)
+    - Auto-dismiss with custom duration
+    - Stacking support
+    - Accessible notifications
 - [ ] Implement responsive layout system
 - [ ] Create loading states and animations
 
 ### 1.3 Core Infrastructure (2 days)
-- [ ] Set up React Router for navigation
-- [ ] Implement API client with Axios
-- [ ] Add authentication system
+- [x] Set up React Router for navigation
+- [x] Implement API client with Axios
 - [ ] Create error handling utilities
-- [ ] Set up state management (React Query)
+- [x] Set up state management (React Query)
 - [ ] Implement WebSocket connection for real-time updates
 
 ## Phase 2: Guest Management Features (Week 2)
@@ -111,6 +140,52 @@ This document outlines the implementation plan for the Event Seating Management 
 - [ ] Add helpful tooltips
 - [ ] Create onboarding tour
 - [ ] Polish animations and transitions
+
+## Repository Organization
+
+### Monorepo Structure
+- [x] Reorganize repository into monorepo structure:
+  ```
+  /
+  ├── apps/
+  │   ├── api/           # Existing API server
+  │   │   ├── src/
+  │   │   ├── tests/
+  │   │   └── package.json
+  │   └── web/           # New UI application
+  │       ├── src/
+  │       ├── tests/
+  │       └── package.json
+  ├── packages/          # Shared packages
+  │   ├── types/        # Shared TypeScript types
+  │   │   └── package.json
+  │   └── config/       # Shared configurations
+  │       └── package.json
+  ├── docs/             # Documentation
+  ├── .github/          # GitHub workflows
+  ├── package.json      # Root package.json
+  └── README.md
+  ```
+
+### Migration Steps (1 day)
+- [x] Create monorepo structure using pnpm workspaces
+- [x] Move existing API code to `apps/api`
+- [x] Set up new UI project in `apps/web`
+- [ ] Create shared packages for common code
+- [x] Configure workspace-level scripts
+- [x] Update CI/CD pipeline for monorepo
+- [x] Add workspace-level development tools:
+  - ESLint configurations
+  - Prettier configurations
+  - TypeScript configurations
+  - Jest/Vitest configurations
+
+### Development Workflow
+- [x] Configure concurrent development scripts
+- [x] Set up workspace-level dependencies
+- [ ] Implement shared type definitions
+- [x] Create development documentation
+- [x] Add workspace-level git hooks
 
 ## Technical Stack
 

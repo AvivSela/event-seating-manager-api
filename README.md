@@ -1,30 +1,32 @@
 # Event Seating API
 
+[![codecov](https://codecov.io/gh/AvivSela/event_seating_api/branch/main/graph/badge.svg)](https://codecov.io/gh/AvivSela/event_seating_api)
+
 A TypeScript-based REST API service for managing users, built with Express.js.
 
 ## Setup
 
 1. Install dependencies:
 ```bash
-npm install
+yarn install
 ```
 
 2. Development:
 ```bash
 # Start development server with auto-reload
-npm run dev
+yarn dev
 
 # Watch TypeScript files and rebuild on changes
-npm run watch
+yarn watch
 ```
 
 3. Production:
 ```bash
 # Build the TypeScript files
-npm run build
+yarn build
 
 # Start the production server
-npm start
+yarn start
 ```
 
 The server will start on port 3000 by default.
