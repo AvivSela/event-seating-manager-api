@@ -8,6 +8,9 @@ import {
 } from "../types/venue";
 import { generateUUID, isValidUUID } from "../utils/uuid";
 import { events } from "./eventController";
+import { ValidationError } from "../types/errors/validation.error";
+import { NotFoundError } from "../types/errors/not-found.error";
+import { BaseError } from "../types/errors/base.error";
 
 export let venues: Venue[] = [];
 
@@ -20,11 +23,15 @@ function validateVenueMap(map: VenueMap | undefined): void {
     typeof map.dimensions.width !== "number" ||
     typeof map.dimensions.height !== "number"
   ) {
-    throw new Error("Map dimensions must include width and height");
+    throw new ValidationError("Map dimensions must include width and height", {
+      dimensions: map?.dimensions
+    });
   }
 
   if (!Array.isArray(map.features)) {
-    throw new Error("Map features must be an array");
+    throw new ValidationError("Map features must be an array", {
+      features: map.features
+    });
   }
 
   map.features.forEach((feature: VenueFeature) => {
@@ -34,7 +41,9 @@ function validateVenueMap(map: VenueMap | undefined): void {
       typeof feature.position.x !== "number" ||
       typeof feature.position.y !== "number"
     ) {
-      throw new Error("Each feature must have a valid type and position");
+      throw new ValidationError("Each feature must have a valid type and position", {
+        feature: feature
+      });
     }
 
     if (feature.type === "table") {
@@ -42,7 +51,9 @@ function validateVenueMap(map: VenueMap | undefined): void {
         typeof feature.numberOfSeats !== "number" ||
         feature.numberOfSeats < 1
       ) {
-        throw new Error("Table features must specify numberOfSeats");
+        throw new ValidationError("Table features must specify numberOfSeats", {
+          numberOfSeats: feature.numberOfSeats
+        });
       }
 
       if (feature.guests) {
@@ -51,8 +62,12 @@ function validateVenueMap(map: VenueMap | undefined): void {
             guest.seatNumber < 1 ||
             guest.seatNumber > feature.numberOfSeats!
           ) {
-            throw new Error(
+            throw new ValidationError(
               "Guest seat number must be between 1 and numberOfSeats",
+              {
+                seatNumber: guest.seatNumber,
+                numberOfSeats: feature.numberOfSeats
+              }
             );
           }
         });
@@ -66,7 +81,12 @@ export const getAllVenues = (_req: Request, res: Response): void => {
   try {
     res.json(venues);
   } catch (error) {
-    res.status(500).json({ message: "Failed to retrieve venues" });
+    throw new BaseError(
+      'INTERNAL_ERROR',
+      500,
+      'Failed to retrieve venues',
+      { error: error instanceof Error ? error.message : 'Unknown error' }
+    );
   }
 };
 
@@ -76,18 +96,24 @@ export const getVenueById = (req: Request, res: Response): void => {
     const venueId = req.params.id;
 
     if (!isValidUUID(venueId)) {
-      res.status(400).json({ message: "Invalid venue ID format" });
-      return;
+      throw new ValidationError("Invalid venue ID format", { id: venueId });
     }
 
     const venue = venues.find((v) => v.id === venueId);
     if (!venue) {
-      res.status(404).json({ message: "Venue not found" });
-      return;
+      throw new NotFoundError("Venue", venueId);
     }
     res.json(venue);
   } catch (error) {
-    res.status(500).json({ message: "Failed to retrieve venue" });
+    if (error instanceof BaseError) {
+      throw error;
+    }
+    throw new BaseError(
+      'INTERNAL_ERROR',
+      500,
+      'Failed to retrieve venue',
+      { error: error instanceof Error ? error.message : 'Unknown error' }
+    );
   }
 };
 
@@ -97,10 +123,11 @@ export const createVenue = (req: Request, res: Response): void => {
     const { name, address, capacity, description, map } = req.body;
 
     if (!name || !address || !capacity) {
-      res
-        .status(400)
-        .json({ message: "Name, address, and capacity are required" });
-      return;
+      throw new ValidationError("Name, address, and capacity are required", {
+        name: !name ? "missing" : undefined,
+        address: !address ? "missing" : undefined,
+        capacity: !capacity ? "missing" : undefined,
+      });
     }
 
     validateVenueMap(map);
@@ -118,11 +145,15 @@ export const createVenue = (req: Request, res: Response): void => {
     venues.push(venue);
     res.status(201).json(venue);
   } catch (error) {
-    if (error instanceof Error) {
-      res.status(400).json({ message: error.message });
-    } else {
-      res.status(500).json({ message: "Something went wrong!" });
+    if (error instanceof BaseError) {
+      throw error;
     }
+    throw new BaseError(
+      'INTERNAL_ERROR',
+      500,
+      'Failed to create venue',
+      { error: error instanceof Error ? error.message : 'Unknown error' }
+    );
   }
 };
 
@@ -130,40 +161,39 @@ export const createVenue = (req: Request, res: Response): void => {
 export const updateVenue = (req: Request, res: Response): void => {
   try {
     const venueId = req.params.id;
+    const updates = req.body;
 
     if (!isValidUUID(venueId)) {
-      res.status(400).json({ message: "Invalid venue ID format" });
-      return;
+      throw new ValidationError("Invalid venue ID format", { id: venueId });
     }
-
-    const { name, address, capacity, description, map } = req.body;
 
     const venueIndex = venues.findIndex((v) => v.id === venueId);
     if (venueIndex === -1) {
-      res.status(404).json({ message: "Venue not found" });
-      return;
+      throw new NotFoundError("Venue", venueId);
     }
 
-    validateVenueMap(map);
+    if (updates.map) {
+      validateVenueMap(updates.map);
+    }
 
-    const updatedVenue: Venue = {
+    const updatedVenue = {
       ...venues[venueIndex],
-      name: name || venues[venueIndex].name,
-      address: address || venues[venueIndex].address,
-      capacity: capacity || venues[venueIndex].capacity,
-      description: description || venues[venueIndex].description,
-      map: map || venues[venueIndex].map,
-      updatedAt: new Date(),
+      ...updates,
+      id: venueId, // Ensure ID cannot be changed
     };
 
     venues[venueIndex] = updatedVenue;
-    res.status(200).json(updatedVenue);
+    res.json(updatedVenue);
   } catch (error) {
-    if (error instanceof Error) {
-      res.status(400).json({ message: error.message });
-    } else {
-      res.status(500).json({ message: "Something went wrong!" });
+    if (error instanceof BaseError) {
+      throw error;
     }
+    throw new BaseError(
+      'INTERNAL_ERROR',
+      500,
+      'Failed to update venue',
+      { error: error instanceof Error ? error.message : 'Unknown error' }
+    );
   }
 };
 
@@ -173,27 +203,35 @@ export const deleteVenue = (req: Request, res: Response): void => {
     const venueId = req.params.id;
 
     if (!isValidUUID(venueId)) {
-      res.status(400).json({ message: "Invalid venue ID format" });
-      return;
+      throw new ValidationError("Invalid venue ID format", { id: venueId });
     }
 
     // Check if venue exists
     const venue = venues.find(v => v.id === venueId);
     if (!venue) {
-      res.status(404).json({ message: "Venue not found" });
-      return;
+      throw new NotFoundError("Venue", venueId);
     }
 
     // Check if venue has any associated events
     const hasEvents = events.some(e => e.venueId === venueId);
     if (hasEvents) {
-      res.status(400).json({ message: "Cannot delete venue with existing events" });
-      return;
+      throw new ValidationError(
+        "Cannot delete venue that is being used by events",
+        { venueId }
+      );
     }
 
     venues = venues.filter((v) => v.id !== venueId);
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete venue" });
+    if (error instanceof BaseError) {
+      throw error;
+    }
+    throw new BaseError(
+      'INTERNAL_ERROR',
+      500,
+      'Failed to delete venue',
+      { error: error instanceof Error ? error.message : 'Unknown error' }
+    );
   }
 };
