@@ -93,5 +93,5 @@ jobs:
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        slug: AvivSela/event-seating-manager-api
+        slug: AvivSela/event_seating_api
         fail_ci_if_error: true 
