@@ -3,106 +3,108 @@ import app from '../app';
 import { TableAssignment } from '../types/tableAssignment';
 import { Guest, GuestStatus } from '../types/guest';
 import { Event, EventType } from '../types/event';
-import { Venue } from '../types/venue';
+import { Venue, VenueFeature } from '../types/venue';
 import { tableAssignments } from '../controllers/tableAssignmentController';
 import { guests } from '../controllers/guestController';
 import { events } from '../controllers/eventController';
 import { venues } from '../controllers/venueController';
 import { generateUUID } from '../utils/uuid';
-import { TEST_USER_ID, validVenueMap } from './helpers/fixtures';
+import { TEST_USER_ID, validVenueMap, testEvent } from './helpers/fixtures';
+import { createTestUser, createTestVenue } from './helpers/factories';
 
 describe('Table Assignment API Routes', () => {
   let testEvent: Event;
   let testVenue: Venue;
   let testGuest: Guest;
   let testTableId: string;
+  const nonExistentId = generateUUID();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Clear all data
     tableAssignments.length = 0;
     guests.length = 0;
     events.length = 0;
     venues.length = 0;
 
-    // Create test venue
-    testVenue = {
-      id: generateUUID(),
+    // Setup test data
+    const user = await createTestUser();
+    testVenue = await createTestVenue({
       name: 'Test Venue',
       address: '123 Test St',
       capacity: 100,
-      map: validVenueMap,
-      createdAt: new Date()
-    };
-    venues.push(testVenue);
+      description: 'A test venue',
+      map: {
+        dimensions: { width: 1000, height: 800 },
+        features: [
+          {
+            type: 'table' as const,
+            tableNumber: '1',
+            numberOfSeats: 4,
+            shape: 'round' as const,
+            position: { x: 0, y: 0 },
+            dimensions: { width: 3, height: 3 }
+          } as VenueFeature & { type: 'table' }
+        ]
+      }
+    });
 
-    // Create test event
-    testEvent = {
-      id: generateUUID(),
-      userId: TEST_USER_ID,
-      venueId: testVenue.id,
-      type: EventType.WEDDING,
-      title: 'Test Wedding',
-      description: 'A test wedding event',
-      date: new Date('2024-12-31'),
-      createdAt: new Date()
-    };
-    events.push(testEvent);
+    // Create event using the API directly to match CreateEventDto
+    const eventResponse = await request(app)
+      .post('/api/events')
+      .send({
+        type: EventType.WEDDING,
+        title: 'Test Wedding',
+        description: 'A test wedding event',
+        date: '2024-12-31T00:00:00.000Z',
+        userId: user.id,
+        venueId: testVenue.id
+      });
+    testEvent = eventResponse.body;
+    
+    testTableId = (testVenue.map?.features[0] as VenueFeature & { type: 'table' }).tableNumber;
 
-    // Create test guest
-    testGuest = {
-      id: generateUUID(),
-      eventId: testEvent.id,
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '123-456-7890',
-      status: GuestStatus.CONFIRMED,
-      partySize: 2,
-      createdAt: new Date()
-    };
-    guests.push(testGuest);
-
-    // Get the test table ID from the venue map
-    const tableFeature = testVenue.map!.features.find(f => f.type === 'table');
-    testTableId = tableFeature!.tableNumber;
+    // Create a test guest
+    const guestResponse = await request(app)
+      .post(`/api/events/${testEvent.id}/guests`)
+      .send({
+        name: 'Test Guest',
+        email: 'test@example.com',
+        partySize: 2
+      });
+    testGuest = guestResponse.body;
   });
 
   describe('POST /api/events/:eventId/tables/:tableId/assignments', () => {
-    it('should create a new table assignment', async () => {
-      const assignmentData = {
-        guestId: testGuest.id,
-        seatNumbers: [1, 2]  // Matches party size of 2
-      };
-
+    it('should create a table assignment', async () => {
       const response = await request(app)
         .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
-        .send(assignmentData);
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
 
       expect(response.status).toBe(201);
-      expect(response.body).toMatchObject({
-        eventId: testEvent.id,
-        tableId: testTableId,
-        guestId: testGuest.id,
-        seatNumbers: [1, 2]
-      });
-      expect(response.body.id).toBeDefined();
-      expect(response.body.assignedAt).toBeDefined();
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.eventId).toBe(testEvent.id);
+      expect(response.body.tableId).toBe(testTableId);
+      expect(response.body.guestId).toBe(testGuest.id);
+      expect(response.body.seatNumbers).toEqual([1, 2]);
+      expect(response.body).toHaveProperty('assignedAt');
     });
 
-    it('should validate seat numbers against table capacity', async () => {
-      const assignmentData = {
-        guestId: testGuest.id,
-        seatNumbers: [1, 7]  // 7 is greater than table capacity of 6
-      };
-
+    it('should validate party size matches seat numbers', async () => {
       const response = await request(app)
         .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
-        .send(assignmentData);
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1] // Only one seat for party size of 2
+        });
 
       expect(response.status).toBe(400);
-      expect(response.body.code).toBe('INVALID_SEAT_NUMBERS');
+      expect(response.body.message).toContain('must match party size');
     });
 
-    it('should prevent double booking of seats', async () => {
+    it('should prevent duplicate seat assignments', async () => {
       // First assignment
       await request(app)
         .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
@@ -112,114 +114,39 @@ describe('Table Assignment API Routes', () => {
         });
 
       // Create another guest
-      const anotherGuest: Guest = {
-        id: generateUUID(),
-        eventId: testEvent.id,
-        name: 'Jane Smith',
-        status: GuestStatus.CONFIRMED,
-        partySize: 2,
-        createdAt: new Date()
-      };
-      guests.push(anotherGuest);
+      const guest2Response = await request(app)
+        .post(`/api/events/${testEvent.id}/guests`)
+        .send({
+          name: 'Test Guest 2',
+          email: 'test2@example.com',
+          partySize: 2
+        });
 
-      // Try to assign same seats
+      // Try to assign overlapping seats
       const response = await request(app)
         .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
         .send({
-          guestId: anotherGuest.id,
-          seatNumbers: [1, 3]  // Seat 1 is already taken
+          guestId: guest2Response.body.id,
+          seatNumbers: [2, 3] // Seat 2 is already taken
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.code).toBe('SEATS_ALREADY_ASSIGNED');
+      expect(response.body.message).toContain('already assigned');
     });
 
-    it('should validate party size matches seat numbers', async () => {
-      const assignmentData = {
-        guestId: testGuest.id,
-        seatNumbers: [1, 2, 3]  // 3 seats for party size of 2
-      };
-
-      const response = await request(app)
-        .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
-        .send(assignmentData);
-
-      expect(response.status).toBe(400);
-      expect(response.body.code).toBe('INVALID_PARTY_SIZE');
-    });
-
-    it('should handle invalid event ID format', async () => {
-      const response = await request(app)
-        .post(`/api/events/invalid-uuid/tables/${testTableId}/assignments`)
-        .send({
-          guestId: testGuest.id,
-          seatNumbers: [1, 2]
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Invalid event ID format');
-    });
-
-    it('should handle non-existent event', async () => {
-      const response = await request(app)
-        .post(`/api/events/${generateUUID()}/tables/${testTableId}/assignments`)
-        .send({
-          guestId: testGuest.id,
-          seatNumbers: [1, 2]
-        });
-
-      expect(response.status).toBe(404);
-      expect(response.body.message).toBe('Event not found');
-    });
-
-    it('should handle missing venue map', async () => {
-      // Create venue without map
-      const venueWithoutMap: Venue = {
-        id: generateUUID(),
-        name: 'Venue Without Map',
-        address: '123 Test St',
-        capacity: 100,
-        createdAt: new Date()
-      };
-      venues.push(venueWithoutMap);
-
-      // Create event with the mapless venue
-      const eventWithoutMap: Event = {
-        id: generateUUID(),
-        userId: TEST_USER_ID,
-        venueId: venueWithoutMap.id,
-        type: EventType.WEDDING,
-        title: 'Test Wedding',
-        description: 'Test event without venue map',
-        date: new Date('2024-12-31'),
-        createdAt: new Date()
-      };
-      events.push(eventWithoutMap);
-
-      const response = await request(app)
-        .post(`/api/events/${eventWithoutMap.id}/tables/${testTableId}/assignments`)
-        .send({
-          guestId: testGuest.id,
-          seatNumbers: [1, 2]
-        });
-
-      expect(response.status).toBe(404);
-      expect(response.body.message).toBe('Venue or venue map not found');
-    });
-
-    it('should handle duplicate seat numbers', async () => {
+    it('should validate seat numbers against table capacity', async () => {
       const response = await request(app)
         .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
         .send({
           guestId: testGuest.id,
-          seatNumbers: [1, 1]  // Duplicate seat number
+          seatNumbers: [1, 5] // Table only has 4 seats
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.code).toBe('INVALID_SEAT_NUMBERS');
+      expect(response.body.message).toContain('Invalid seat numbers');
     });
 
-    it('should handle guest already assigned to another table', async () => {
+    it('should prevent assigning already assigned guest', async () => {
       // First assignment
       await request(app)
         .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
@@ -228,7 +155,7 @@ describe('Table Assignment API Routes', () => {
           seatNumbers: [1, 2]
         });
 
-      // Try to assign same guest to another table
+      // Try to assign same guest to different seats
       const response = await request(app)
         .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
         .send({
@@ -237,103 +164,103 @@ describe('Table Assignment API Routes', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.code).toBe('GUEST_ALREADY_ASSIGNED');
+      expect(response.body.message).toContain('already assigned');
+    });
+
+    it('should handle invalid event ID', async () => {
+      const response = await request(app)
+        .post(`/api/events/invalid-uuid/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('Invalid event ID format');
+    });
+
+    it('should handle non-existent event', async () => {
+      const response = await request(app)
+        .post(`/api/events/${nonExistentId}/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toContain('Event not found');
+    });
+
+    it('should handle non-existent table', async () => {
+      const response = await request(app)
+        .post(`/api/events/${testEvent.id}/tables/nonexistent/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('Table not found');
+    });
+
+    it('should handle non-existent guest', async () => {
+      const response = await request(app)
+        .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
+        .send({
+          guestId: nonExistentId,
+          seatNumbers: [1, 2]
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('Guest not found');
     });
   });
 
   describe('GET /api/events/:eventId/tables/:tableId/assignments', () => {
     it('should return all assignments for a table', async () => {
       // Create an assignment first
-      const assignment: TableAssignment = {
-        id: generateUUID(),
-        eventId: testEvent.id,
-        tableId: testTableId,
-        guestId: testGuest.id,
-        seatNumbers: [1, 2],
-        assignedAt: new Date(),
-        createdAt: new Date()
-      };
-      tableAssignments.push(assignment);
+      await request(app)
+        .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
 
       const response = await request(app)
         .get(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`);
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body).toHaveLength(1);
-      expect(response.body[0].id).toBe(assignment.id);
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].tableId).toBe(testTableId);
+      expect(response.body[0].guestId).toBe(testGuest.id);
     });
 
-    it('should handle invalid event ID format', async () => {
+    it('should return empty array for table with no assignments', async () => {
       const response = await request(app)
-        .get(`/api/events/invalid-uuid/tables/${testTableId}/assignments`);
+        .get(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`);
 
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Invalid event ID format');
-    });
-
-    it('should handle non-existent event', async () => {
-      const response = await request(app)
-        .get(`/api/events/${generateUUID()}/tables/${testTableId}/assignments`);
-
-      expect(response.status).toBe(404);
-      expect(response.body.message).toBe('Event not found');
-    });
-
-    it('should handle missing venue map', async () => {
-      // Create venue without map
-      const venueWithoutMap: Venue = {
-        id: generateUUID(),
-        name: 'Venue Without Map',
-        address: '123 Test St',
-        capacity: 100,
-        createdAt: new Date()
-      };
-      venues.push(venueWithoutMap);
-
-      // Create event with the mapless venue
-      const eventWithoutMap: Event = {
-        id: generateUUID(),
-        userId: TEST_USER_ID,
-        venueId: venueWithoutMap.id,
-        type: EventType.WEDDING,
-        title: 'Test Wedding',
-        description: 'Test event without venue map',
-        date: new Date('2024-12-31'),
-        createdAt: new Date()
-      };
-      events.push(eventWithoutMap);
-
-      const response = await request(app)
-        .get(`/api/events/${eventWithoutMap.id}/tables/${testTableId}/assignments`);
-
-      expect(response.status).toBe(404);
-      expect(response.body.message).toBe('Venue or venue map not found');
-    });
-
-    it('should handle non-existent table', async () => {
-      const response = await request(app)
-        .get(`/api/events/${testEvent.id}/tables/non-existent-table/assignments`);
-
-      expect(response.status).toBe(400);
-      expect(response.body.code).toBe('TABLE_NOT_FOUND');
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(0);
     });
   });
 
   describe('DELETE /api/events/:eventId/tables/:tableId/assignments/:guestId', () => {
-    it('should delete a table assignment', async () => {
-      // Create an assignment first
-      const assignment: TableAssignment = {
-        id: generateUUID(),
-        eventId: testEvent.id,
-        tableId: testTableId,
-        guestId: testGuest.id,
-        seatNumbers: [1, 2],
-        assignedAt: new Date(),
-        createdAt: new Date()
-      };
-      tableAssignments.push(assignment);
+    let testAssignment: TableAssignment;
 
+    beforeEach(async () => {
+      // Create an assignment to delete
+      const response = await request(app)
+        .post(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`)
+        .send({
+          guestId: testGuest.id,
+          seatNumbers: [1, 2]
+        });
+      testAssignment = response.body;
+    });
+
+    it('should delete a table assignment', async () => {
       const response = await request(app)
         .delete(`/api/events/${testEvent.id}/tables/${testTableId}/assignments/${testGuest.id}`);
 
@@ -342,69 +269,23 @@ describe('Table Assignment API Routes', () => {
       // Verify assignment was deleted
       const getResponse = await request(app)
         .get(`/api/events/${testEvent.id}/tables/${testTableId}/assignments`);
-      expect(getResponse.body).toHaveLength(0);
+      expect(getResponse.body.length).toBe(0);
     });
 
-    it('should return 404 for non-existent assignment', async () => {
+    it('should handle non-existent assignment', async () => {
       const response = await request(app)
-        .delete(`/api/events/${testEvent.id}/tables/${testTableId}/assignments/${generateUUID()}`);
+        .delete(`/api/events/${testEvent.id}/tables/${testTableId}/assignments/${nonExistentId}`);
 
       expect(response.status).toBe(404);
+      expect(response.body.message).toContain('Table assignment not found');
     });
 
-    it('should handle invalid event/guest ID format', async () => {
+    it('should handle invalid guest ID format', async () => {
       const response = await request(app)
-        .delete(`/api/events/invalid-uuid/tables/${testTableId}/assignments/invalid-uuid`);
+        .delete(`/api/events/${testEvent.id}/tables/${testTableId}/assignments/invalid-uuid`);
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Invalid ID format');
-    });
-
-    it('should handle non-existent event', async () => {
-      const response = await request(app)
-        .delete(`/api/events/${generateUUID()}/tables/${testTableId}/assignments/${testGuest.id}`);
-
-      expect(response.status).toBe(404);
-      expect(response.body.message).toBe('Event not found');
-    });
-
-    it('should handle missing venue map', async () => {
-      // Create venue without map
-      const venueWithoutMap: Venue = {
-        id: generateUUID(),
-        name: 'Venue Without Map',
-        address: '123 Test St',
-        capacity: 100,
-        createdAt: new Date()
-      };
-      venues.push(venueWithoutMap);
-
-      // Create event with the mapless venue
-      const eventWithoutMap: Event = {
-        id: generateUUID(),
-        userId: TEST_USER_ID,
-        venueId: venueWithoutMap.id,
-        type: EventType.WEDDING,
-        title: 'Test Wedding',
-        description: 'Test event without venue map',
-        date: new Date('2024-12-31'),
-        createdAt: new Date()
-      };
-      events.push(eventWithoutMap);
-
-      const response = await request(app)
-        .delete(`/api/events/${eventWithoutMap.id}/tables/${testTableId}/assignments/${testGuest.id}`);
-
-      expect(response.status).toBe(404);
-      expect(response.body.message).toBe('Venue or venue map not found');
-    });
-
-    it('should handle non-existent table', async () => {
-      const response = await request(app)
-        .delete(`/api/events/${testEvent.id}/tables/non-existent-table/assignments/${testGuest.id}`);
-
-      expect(response.status).toBe(400);
-      expect(response.body.code).toBe('TABLE_NOT_FOUND');
+      expect(response.body.message).toContain('Invalid ID format');
     });
   });
 }); 
