@@ -1,33 +1,22 @@
-declare global {
-  var testIds: {
-    eventId: string;
-    userId: string;
-    venueId: string;
-    guestId: string;
-    tableId: string;
-  };
-}
+import { TextEncoder, TextDecoder } from 'util';
 
-import { generateUUID } from '../utils/uuid';
+// Setup TextEncoder/TextDecoder for Node.js environment
+global.TextEncoder = TextEncoder;
+(global as any).TextDecoder = TextDecoder;
 
-// Global test setup
-beforeAll(() => {
-  // Pre-generate some UUIDs for tests to use
-  global.testIds = {
-    eventId: generateUUID(),
-    userId: generateUUID(),
-    venueId: generateUUID(),
-    guestId: generateUUID(),
-    tableId: generateUUID()
-  };
+// Extend Jest matchers
+expect.extend({
+  toBeValidUUID(received) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const pass = uuidRegex.test(received);
+    return {
+      message: () => `expected ${received} to be a valid UUID`,
+      pass,
+    };
+  },
 });
 
-// Clear mocks and spies after each test
-afterEach(() => {
+// Clear mocks between tests
+beforeEach(() => {
   jest.clearAllMocks();
-});
-
-// Global teardown
-afterAll(() => {
-  // Clean up any resources
 }); 

@@ -23,6 +23,7 @@ export interface CreateEventDto {
   title: string;
   description?: string;
   date: string;  // ISO date string
+  expectedGuests?: number;  // Optional expected number of guests
 }
 
 export interface UpdateEventDto {
@@ -31,4 +32,5 @@ export interface UpdateEventDto {
   description?: string;
   date?: string;  // ISO date string
   venueId?: string;  // UUID reference to Venue
+  expectedGuests?: number;  // Optional expected number of guests
 }
