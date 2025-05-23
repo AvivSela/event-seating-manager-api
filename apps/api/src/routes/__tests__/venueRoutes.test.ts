@@ -1,19 +1,40 @@
 import request from "supertest";
-import express from "express";
-import venueRoutes from "../venueRoutes";
+import app from "../../app";
 import { venues } from "../../controllers/venueController";
-import { generateUUID } from "../../utils/uuid";
 import { events } from "../../controllers/eventController";
+import { generateUUID } from "../../utils/uuid";
+import { Venue, VenueMap, TableFeature } from "../../types/venue";
 import { EventType } from "../../types/event";
 
-const app = express();
-app.use(express.json());
-app.use("/api/venues", venueRoutes);
-
 describe("Venue Routes", () => {
+  const validTableFeature: TableFeature = {
+    type: "table",
+    tableNumber: "T1",
+    position: { x: 10, y: 10 },
+    numberOfSeats: 8,
+    shape: "rectangular",
+    dimensions: { width: 20, height: 10 },
+  };
+
+  const validVenueMap: VenueMap = {
+    dimensions: {
+      width: 100,
+      height: 100,
+    },
+    features: [validTableFeature],
+  };
+
+  const validVenueData = {
+    name: "Test Venue",
+    address: "123 Test St",
+    capacity: 100,
+    description: "A test venue",
+    map: validVenueMap,
+  };
+
   beforeEach(() => {
-    // Clear venues array before each test
     venues.length = 0;
+    events.length = 0;
   });
 
   describe("GET /api/venues", () => {
@@ -24,20 +45,17 @@ describe("Venue Routes", () => {
     });
 
     it("should return all venues", async () => {
-      const testVenue = {
+      const venue: Venue = {
         id: generateUUID(),
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        description: "Test Description",
+        ...validVenueData,
         createdAt: new Date(),
       };
-      venues.push(testVenue);
+      venues.push(venue);
 
       const response = await request(app).get("/api/venues");
       expect(response.status).toBe(200);
       expect(response.body).toHaveLength(1);
-      expect(response.body[0].name).toBe(testVenue.name);
+      expect(response.body[0]).toEqual(expect.objectContaining(validVenueData));
     });
   });
 
@@ -45,120 +63,106 @@ describe("Venue Routes", () => {
     it("should return 400 for invalid UUID", async () => {
       const response = await request(app).get("/api/venues/invalid-uuid");
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Invalid venue ID format");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Invalid venue ID format",
+        details: { id: "invalid-uuid" }
+      });
     });
 
     it("should return 404 for non-existent venue", async () => {
-      const response = await request(app).get(`/api/venues/${generateUUID()}`);
+      const nonExistentId = generateUUID();
+      const response = await request(app).get(`/api/venues/${nonExistentId}`);
       expect(response.status).toBe(404);
-      expect(response.body.message).toBe("Venue not found");
+      expect(response.body).toEqual({
+        code: "NOT_FOUND",
+        message: `Venue with ID ${nonExistentId} not found`,
+        details: undefined
+      });
     });
 
     it("should return venue by ID", async () => {
-      const testVenue = {
+      const venue: Venue = {
         id: generateUUID(),
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        description: "Test Description",
+        ...validVenueData,
         createdAt: new Date(),
       };
-      venues.push(testVenue);
+      venues.push(venue);
 
-      const response = await request(app).get(`/api/venues/${testVenue.id}`);
+      const response = await request(app).get(`/api/venues/${venue.id}`);
       expect(response.status).toBe(200);
-      expect(response.body.id).toBe(testVenue.id);
+      expect(response.body).toEqual(expect.objectContaining(validVenueData));
     });
   });
 
   describe("POST /api/venues", () => {
-    it("should create new venue with valid data", async () => {
-      const newVenue = {
-        name: "New Venue",
-        address: "456 New St",
-        capacity: 200,
-        description: "New Description",
-      };
-
+    it("should create venue with valid data", async () => {
       const response = await request(app)
         .post("/api/venues")
-        .send(newVenue);
+        .send(validVenueData);
 
       expect(response.status).toBe(201);
-      expect(response.body.name).toBe(newVenue.name);
-      expect(response.body.id).toBeDefined();
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          ...validVenueData,
+          id: expect.any(String),
+          createdAt: expect.any(String),
+        })
+      );
     });
 
     it("should return 400 for missing required fields", async () => {
+      const invalidData = { ...validVenueData };
+      const { name, ...dataWithoutName } = invalidData;
+
       const response = await request(app)
         .post("/api/venues")
-        .send({ name: "Incomplete Venue" });
+        .send(dataWithoutName);
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Name, address, and capacity are required");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Name, address, and capacity are required",
+        details: { name: "missing" }
+      });
     });
 
     it("should validate venue map data", async () => {
-      const venueWithInvalidMap = {
-        name: "Map Venue",
-        address: "789 Map St",
-        capacity: 300,
-        map: {
-          dimensions: { width: "invalid" }, // Invalid dimensions
-          features: []
-        }
+      const { width, ...dimensionsWithoutWidth } = validVenueMap.dimensions;
+      const invalidMap = {
+        ...validVenueMap,
+        dimensions: dimensionsWithoutWidth,
       };
 
       const response = await request(app)
         .post("/api/venues")
-        .send(venueWithInvalidMap);
+        .send({ ...validVenueData, map: invalidMap });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Map dimensions must include width and height");
-    });
-
-    it("should create venue with valid map and table configuration", async () => {
-      const venueWithMap = {
-        name: "Map Venue",
-        address: "789 Map St",
-        capacity: 300,
-        map: {
-          dimensions: { width: 100, height: 100 },
-          features: [
-            {
-              type: "table",
-              position: { x: 10, y: 20 },
-              numberOfSeats: 8,
-              guests: []
-            }
-          ]
-        }
-      };
-
-      const response = await request(app)
-        .post("/api/venues")
-        .send(venueWithMap);
-
-      expect(response.status).toBe(201);
-      expect(response.body.map.features[0].numberOfSeats).toBe(8);
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Map dimensions must include width and height",
+        details: { dimensions: dimensionsWithoutWidth }
+      });
     });
   });
 
   describe("PUT /api/venues/:id", () => {
-    it("should update venue with valid data", async () => {
-      const testVenue = {
+    let testVenue: Venue;
+
+    beforeEach(() => {
+      testVenue = {
         id: generateUUID(),
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        description: "Test Description",
+        ...validVenueData,
         createdAt: new Date(),
       };
       venues.push(testVenue);
+    });
 
+    it("should update venue with valid data", async () => {
       const updateData = {
         name: "Updated Venue",
-        capacity: 150
+        description: "Updated description",
       };
 
       const response = await request(app)
@@ -166,226 +170,214 @@ describe("Venue Routes", () => {
         .send(updateData);
 
       expect(response.status).toBe(200);
-      expect(response.body.name).toBe(updateData.name);
-      expect(response.body.capacity).toBe(updateData.capacity);
-      expect(response.body.address).toBe(testVenue.address);
+      expect(response.body).toEqual({
+        ...testVenue,
+        ...updateData,
+        createdAt: testVenue.createdAt.toISOString(),
+      });
     });
 
     it("should return 404 for non-existent venue", async () => {
+      const nonExistentId = generateUUID();
       const response = await request(app)
-        .put(`/api/venues/${generateUUID()}`)
-        .send({ name: "Updated Name" });
+        .put(`/api/venues/${nonExistentId}`)
+        .send({ name: "Updated Venue" });
 
       expect(response.status).toBe(404);
-      expect(response.body.message).toBe("Venue not found");
+      expect(response.body).toEqual({
+        code: "NOT_FOUND",
+        message: `Venue with ID ${nonExistentId} not found`,
+        details: undefined
+      });
     });
 
     it("should validate updated map data", async () => {
-      const testVenue = {
-        id: generateUUID(),
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        createdAt: new Date(),
-      };
-      venues.push(testVenue);
-
-      const invalidUpdate = {
-        map: {
-          dimensions: { width: "invalid" },
-          features: []
-        }
+      const { width, ...dimensionsWithoutWidth } = validVenueMap.dimensions;
+      const invalidMap = {
+        ...validVenueMap,
+        dimensions: dimensionsWithoutWidth,
       };
 
       const response = await request(app)
         .put(`/api/venues/${testVenue.id}`)
-        .send(invalidUpdate);
+        .send({ map: invalidMap });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Map dimensions must include width and height");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Map dimensions must include width and height",
+        details: { dimensions: dimensionsWithoutWidth }
+      });
     });
   });
 
   describe("DELETE /api/venues/:id", () => {
-    it("should delete existing venue", async () => {
-      const testVenue = {
+    let testVenue: Venue;
+
+    beforeEach(() => {
+      testVenue = {
         id: generateUUID(),
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        description: "Test Description",
+        ...validVenueData,
         createdAt: new Date(),
       };
       venues.push(testVenue);
+    });
 
+    it("should delete venue when no events exist", async () => {
       const response = await request(app).delete(`/api/venues/${testVenue.id}`);
       expect(response.status).toBe(204);
-
-      // Verify venue was deleted
-      const getResponse = await request(app).get(`/api/venues/${testVenue.id}`);
-      expect(getResponse.status).toBe(404);
+      expect(venues).toHaveLength(0);
     });
 
     it("should return 400 for invalid UUID", async () => {
       const response = await request(app).delete("/api/venues/invalid-uuid");
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Invalid venue ID format");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Invalid venue ID format",
+        details: { id: "invalid-uuid" }
+      });
     });
 
     it("should return 404 for non-existent venue", async () => {
-      const response = await request(app).delete(`/api/venues/${generateUUID()}`);
+      const nonExistentId = generateUUID();
+      const response = await request(app).delete(`/api/venues/${nonExistentId}`);
       expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        code: "NOT_FOUND",
+        message: `Venue with ID ${nonExistentId} not found`,
+        details: undefined
+      });
     });
   });
 
   describe("Error Scenarios", () => {
     it("should handle invalid venue ID format", async () => {
-      const response = await request(app)
-        .get("/api/venues/invalid-uuid");
-
+      const response = await request(app).get("/api/venues/invalid-uuid");
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Invalid venue ID format");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Invalid venue ID format",
+        details: { id: "invalid-uuid" }
+      });
     });
 
     it("should handle non-existent venue", async () => {
-      const response = await request(app)
-        .get(`/api/venues/${generateUUID()}`);
-
+      const nonExistentId = generateUUID();
+      const response = await request(app).get(`/api/venues/${nonExistentId}`);
       expect(response.status).toBe(404);
-      expect(response.body.message).toBe("Venue not found");
+      expect(response.body).toEqual({
+        code: "NOT_FOUND",
+        message: `Venue with ID ${nonExistentId} not found`,
+        details: undefined
+      });
     });
 
     it("should handle invalid map data", async () => {
-      const venueData = {
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        description: "Test Description",
-        map: {
-          dimensions: { width: "invalid" }, // Invalid width type
-          features: []
-        }
+      const { width, ...dimensionsWithoutWidth } = validVenueMap.dimensions;
+      const invalidMap = {
+        ...validVenueMap,
+        dimensions: dimensionsWithoutWidth,
       };
 
       const response = await request(app)
         .post("/api/venues")
-        .send(venueData);
+        .send({ ...validVenueData, map: invalidMap });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Map dimensions must include width and height");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Map dimensions must include width and height",
+        details: { dimensions: dimensionsWithoutWidth }
+      });
     });
 
     it("should handle invalid feature data", async () => {
-      const venueData = {
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        description: "Test Description",
-        map: {
-          dimensions: { width: 100, height: 100 },
-          features: [
-            {
-              type: "table",
-              position: { x: 10 }, // Missing y coordinate
-              numberOfSeats: 8
-            }
-          ]
-        }
+      const { position, ...featureWithoutPosition } = validTableFeature;
+      const invalidFeature = {
+        ...validVenueMap,
+        features: [featureWithoutPosition],
       };
 
       const response = await request(app)
         .post("/api/venues")
-        .send(venueData);
+        .send({ ...validVenueData, map: invalidFeature });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Each feature must have a valid type and position");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Each feature must have a valid type and position",
+        details: { feature: featureWithoutPosition }
+      });
     });
 
     it("should handle invalid table feature data", async () => {
-      const venueData = {
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        description: "Test Description",
-        map: {
-          dimensions: { width: 100, height: 100 },
-          features: [
-            {
-              type: "table",
-              position: { x: 10, y: 20 },
-              numberOfSeats: 0 // Invalid number of seats
-            }
-          ]
-        }
+      const { numberOfSeats, ...featureWithoutSeats } = validTableFeature;
+      const invalidTableFeature = {
+        ...validVenueMap,
+        features: [featureWithoutSeats],
       };
 
       const response = await request(app)
         .post("/api/venues")
-        .send(venueData);
+        .send({ ...validVenueData, map: invalidTableFeature });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Table features must specify numberOfSeats");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Table features must specify numberOfSeats",
+        details: { numberOfSeats: undefined }
+      });
     });
 
     it("should handle invalid guest seat number", async () => {
-      const venueData = {
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        description: "Test Description",
-        map: {
-          dimensions: { width: 100, height: 100 },
-          features: [
-            {
-              type: "table",
-              position: { x: 10, y: 20 },
-              numberOfSeats: 4,
-              guests: [
-                { id: generateUUID(), seatNumber: 5 } // Seat number > numberOfSeats
-              ]
-            }
-          ]
-        }
+      const invalidGuestSeat = {
+        ...validVenueMap,
+        features: [{
+          ...validTableFeature,
+          numberOfSeats: 4,
+          guests: [{ id: "1", seatNumber: 5 }], // Seat number > numberOfSeats
+        }],
       };
 
       const response = await request(app)
         .post("/api/venues")
-        .send(venueData);
+        .send({ ...validVenueData, map: invalidGuestSeat });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Guest seat number must be between 1 and numberOfSeats");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Guest seat number must be between 1 and numberOfSeats",
+        details: { seatNumber: 5, numberOfSeats: 4 }
+      });
     });
 
     it("should handle venue deletion with existing events", async () => {
-      // Create a venue
-      const venue = {
+      const venue: Venue = {
         id: generateUUID(),
-        name: "Test Venue",
-        address: "123 Test St",
-        capacity: 100,
-        description: "Test Description",
-        createdAt: new Date()
+        ...validVenueData,
+        createdAt: new Date(),
       };
       venues.push(venue);
 
-      // Create an event using this venue
-      const event = {
+      events.push({
         id: generateUUID(),
         userId: generateUUID(),
         venueId: venue.id,
-        title: "Test Event",
-        description: "Test Event Description",
-        date: new Date(),
         type: EventType.WEDDING,
-        createdAt: new Date()
-      };
-      events.push(event);
+        title: "Test Event",
+        description: "Test Description",
+        date: new Date(),
+        createdAt: new Date(),
+      });
 
-      const response = await request(app)
-        .delete(`/api/venues/${venue.id}`);
-
+      const response = await request(app).delete(`/api/venues/${venue.id}`);
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Cannot delete venue with existing events");
+      expect(response.body).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "Cannot delete venue that is being used by events",
+        details: { venueId: venue.id }
+      });
     });
   });
 }); 

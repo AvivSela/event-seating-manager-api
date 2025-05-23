@@ -16,7 +16,6 @@ comment:
 
 ignore:
   - "**/*.test.ts"
-  - "**/*.spec.ts"
   - "**/test/**"
   - "**/tests/**"
   - "**/__tests__/**"

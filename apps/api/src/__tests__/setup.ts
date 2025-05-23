@@ -1,4 +1,5 @@
 import { TextEncoder, TextDecoder } from 'util';
+import { clearEvents, clearVenues } from '../utils/testUtils';
 
 // Setup TextEncoder/TextDecoder for Node.js environment
 global.TextEncoder = TextEncoder;
@@ -19,4 +20,13 @@ expect.extend({
 // Clear mocks between tests
 beforeEach(() => {
   jest.clearAllMocks();
+  // Clear test data before each test
+  clearEvents();
+  clearVenues();
+});
+
+describe('Test Environment', () => {
+  it('should be configured correctly', () => {
+    expect(process.env.NODE_ENV).toBe('test');
+  });
 }); 
