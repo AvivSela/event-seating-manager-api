@@ -4,8 +4,7 @@
   "version": "1.0.0",
   "description": "Event seating management system",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "yarn workspaces foreach --all --parallel run dev",
