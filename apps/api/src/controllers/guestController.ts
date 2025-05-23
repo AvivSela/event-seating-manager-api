@@ -87,6 +87,12 @@ export const getEventGuests = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid event ID format" });
     }
 
+    // Check if event exists
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
     const assigned = req.query.assigned;
     let eventGuests = guests.filter(g => g.eventId === eventId);
 

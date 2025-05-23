@@ -177,6 +177,13 @@ export const deleteVenue = (req: Request, res: Response): void => {
       return;
     }
 
+    // Check if venue exists
+    const venue = venues.find(v => v.id === venueId);
+    if (!venue) {
+      res.status(404).json({ message: "Venue not found" });
+      return;
+    }
+
     // Check if venue has any associated events
     const hasEvents = events.some(e => e.venueId === venueId);
     if (hasEvents) {
