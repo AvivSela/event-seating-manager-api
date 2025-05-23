@@ -1,3 +1,5 @@
+
+[![codecov](https://codecov.io/gh/AvivSela/event-seating-manager-api/branch/main/graph/badge.svg)](https://codecov.io/gh/AvivSela/event-seating-manager-api)
 # Event Seating API
 
 A TypeScript-based REST API service for managing event seating arrangements, built with Express.js.
