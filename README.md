@@ -15,26 +15,28 @@ A TypeScript-based REST API service for managing event seating arrangements, bui
 ## Project Structure
 
 ```
-apps/
-├── api/
-│   ├── src/
-│   │   ├── controllers/     # Business logic handlers
-│   │   │   ├── eventController.ts
-│   │   │   ├── guestController.ts
-│   │   │   ├── tableAssignmentController.ts
-│   │   │   ├── userController.ts
-│   │   │   └── venueController.ts
-│   │   ├── routes/         # API route definitions
-│   │   │   ├── eventRoutes.ts
-│   │   │   ├── guestRoutes.ts
-│   │   │   ├── tableAssignmentRoutes.ts
-│   │   │   ├── userRoutes.ts
-│   │   │   └── venueRoutes.ts
-│   │   ├── types/          # TypeScript type definitions
-│   │   ├── utils/          # Utility functions
-│   │   └── app.ts          # Express application setup
-│   └── package.json
-└── web/                    # Web frontend (React)
+/
+├── apps/
+│   └── api/
+│       ├── src/           # Source code directory
+│       ├── dist/          # Compiled output
+│       ├── coverage/      # Test coverage reports
+│       ├── jest.config.js # Jest test configuration
+│       ├── package.json   # API-specific dependencies
+│       └── tsconfig.json  # API-specific TypeScript config
+├── docs/                  # Documentation files
+├── dist/                  # Project build output
+├── coverage/              # Project-wide test coverage
+├── .github/              # GitHub configuration files
+├── .yarn/                # Yarn package manager files
+├── node_modules/         # Project dependencies
+├── jest.config.js        # Project-wide Jest configuration
+├── tsconfig.json         # Root TypeScript configuration
+├── package.json          # Project dependencies and scripts
+├── yarn.lock             # Yarn dependency lock file
+├── nodemon.json          # Nodemon configuration
+├── codecov.yml           # CodeCov configuration
+└── LICENSE              # Project license file
 ```
 
 ## Setup
