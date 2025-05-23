@@ -1,45 +1,22 @@
 module.exports = {
-  // Enable parallel test execution
-  maxWorkers: '50%',
-  
-  // Improve test isolation
-  isolatedModules: true,
-  
-  // Only run tests in __tests__ directories
-  testMatch: ['**/__tests__/**/*.test.ts'],
-  
-  // Optimize transform caching
-  transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      isolatedModules: true,
-      diagnostics: false
-    }]
-  },
-  
-  // Cache babel transformations
-  cache: true,
-  
-  // Coverage configuration
-  collectCoverage: true,
-  coverageDirectory: '<rootDir>/coverage',
-  coverageReporters: ['json', 'lcov', 'text', 'clover'],
-  collectCoverageFrom: [
-    'src/**/*.{js,ts}',
-    '!src/**/*.d.ts',
-    '!src/**/*.test.{js,ts}',
-    '!src/__tests__/**/*',
-    '!**/node_modules/**'
-  ],
-  
-  // Setup test environment
+  preset: 'ts-jest',
   testEnvironment: 'node',
-  
-  // Optimize module resolution
-  moduleDirectories: ['node_modules', 'src'],
-  
-  // Setup timeout
-  testTimeout: 10000,
-  
-  // Global setup file
-  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts']
+  roots: ['<rootDir>/apps/api/src'],
+  testMatch: ['**/__tests__/**/*.test.ts'],
+  collectCoverageFrom: [
+    'apps/api/src/**/*.ts',
+    '!apps/api/src/**/*.d.ts',
+    '!apps/api/src/**/__tests__/**'
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    }
+  },
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/apps/api/src/$1'
+  }
 }; 
