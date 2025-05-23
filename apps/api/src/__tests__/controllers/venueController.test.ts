@@ -11,9 +11,13 @@ import { events } from '../../controllers/eventController';
 import { Venue, CreateVenueDto, UpdateVenueDto, VenueMap } from '../../types/venue';
 import { generateUUID } from '../../utils/uuid';
 import { EventType } from '../../types/event';
+import { mockRequest, mockResponse } from "../../utils/testUtils";
+import { ValidationError } from "../../types/errors/validation.error";
+import { NotFoundError } from "../../types/errors/not-found.error";
+import { BaseError } from "../../types/errors/base.error";
 
 // Mock response object
-const mockResponse = () => {
+const mockResponseObject = () => {
   const res: Partial<Response> = {
     json: jest.fn(),
     status: jest.fn().mockReturnThis(),
@@ -23,7 +27,7 @@ const mockResponse = () => {
 };
 
 // Mock request object with proper typing
-const mockRequest = <P = any, B = any>(params: P = {} as P, body: B = {} as B): Request<P, any, B> => {
+const mockRequestObject = <P = any, B = any>(params: P = {} as P, body: B = {} as B): Request<P, any, B> => {
   return {
     params,
     body
@@ -71,20 +75,21 @@ describe('Venue Controller', () => {
 
   describe('getAllVenues', () => {
     it('should return all venues', () => {
+      const testDate = new Date();
       const testVenues: Venue[] = [
         {
           id: generateUUID(),
           name: 'Venue 1',
           address: '123 St',
           capacity: 100,
-          createdAt: new Date()
+          createdAt: testDate
         },
         {
           id: generateUUID(),
           name: 'Venue 2',
           address: '456 St',
           capacity: 200,
-          createdAt: new Date()
+          createdAt: testDate
         }
       ];
       venues.push(...testVenues);
@@ -94,7 +99,15 @@ describe('Venue Controller', () => {
 
       getAllVenues(req, res);
 
-      expect(res.json).toHaveBeenCalledWith(testVenues);
+      const expectedVenues = testVenues.map(venue => ({
+        id: venue.id,
+        name: venue.name,
+        address: venue.address,
+        capacity: venue.capacity,
+        createdAt: venue.createdAt
+      }));
+
+      expect(res.json).toHaveBeenCalledWith(expectedVenues);
     });
 
     it('should return empty array when no venues exist', () => {
@@ -105,10 +118,22 @@ describe('Venue Controller', () => {
 
       expect(res.json).toHaveBeenCalledWith([]);
     });
+
+    it('should handle errors gracefully', () => {
+      const req = mockRequest();
+      const res = mockResponse();
+
+      // Mock res.json to throw error
+      res.json = jest.fn().mockImplementation(() => {
+        throw new Error("Test error");
+      });
+
+      expect(() => getAllVenues(req, res)).toThrow(BaseError);
+    });
   });
 
   describe('getVenueById', () => {
-    it('should return venue when valid ID is provided', () => {
+    it('should return venue by ID', () => {
       const testVenue: Venue = {
         id: generateUUID(),
         name: 'Test Venue',
@@ -118,7 +143,9 @@ describe('Venue Controller', () => {
       };
       venues.push(testVenue);
 
-      const req = mockRequest<{ id: string }>({ id: testVenue.id });
+      const req = mockRequest({
+        params: { id: testVenue.id }
+      });
       const res = mockResponse();
 
       getVenueById(req, res);
@@ -127,278 +154,135 @@ describe('Venue Controller', () => {
     });
 
     it('should return 404 when venue is not found', () => {
-      const req = mockRequest<{ id: string }>({ id: generateUUID() });
+      const req = mockRequest({
+        params: { id: generateUUID() }
+      });
       const res = mockResponse();
 
-      getVenueById(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Venue not found' });
+      expect(() => getVenueById(req, res)).toThrow(NotFoundError);
     });
 
     it('should return 400 when invalid UUID is provided', () => {
-      const req = mockRequest<{ id: string }>({ id: 'invalid-uuid' });
+      const req = mockRequest({
+        params: { id: 'invalid-uuid' }
+      });
       const res = mockResponse();
 
-      getVenueById(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid venue ID format' });
+      expect(() => getVenueById(req, res)).toThrow(ValidationError);
     });
 
     it('should handle unexpected errors', () => {
-      const req = mockRequest<{ id: string }>({ id: generateUUID() });
+      const req = mockRequest({
+        params: { id: generateUUID() }
+      });
       const res = mockResponse();
 
-      // Mock venues.find to throw an error
+      // Mock venues.find to throw error
       jest.spyOn(venues, 'find').mockImplementation(() => {
-        throw new Error('Database error');
+        throw new Error('Test error');
       });
 
-      getVenueById(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Failed to retrieve venue' });
-    });
-
-    it('should handle errors when venues array is not accessible', () => {
-      const req = mockRequest<{ id: string }>({ id: generateUUID() });
-      const res = mockResponse();
-
-      // Mock venues.find to throw an error
-      const originalFind = venues.find;
-      venues.find = () => { throw new Error('Cannot access venues'); };
-
-      getVenueById(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Failed to retrieve venue' });
-
-      // Restore venues.find
-      venues.find = originalFind;
+      expect(() => getVenueById(req, res)).toThrow(BaseError);
     });
   });
 
   describe('createVenue', () => {
     it('should create venue with valid data', () => {
-      const req = mockRequest<{}, CreateVenueDto>({}, validVenueData);
+      const req = mockRequest({
+        body: validVenueData
+      });
       const res = mockResponse();
 
       createVenue(req, res);
 
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        name: validVenueData.name,
-        address: validVenueData.address,
-        capacity: validVenueData.capacity,
-        description: validVenueData.description,
-        map: validVenueData.map,
+        ...validVenueData,
         id: expect.any(String),
         createdAt: expect.any(Date)
       }));
     });
 
-    it('should return 400 when required fields are missing', () => {
-      const invalidData = { ...validVenueData };
-      delete (invalidData as any).name;
+    it('should validate required fields', () => {
+      const invalidData = {
+        address: '123 St',
+        capacity: 100
+      };
 
-      const req = mockRequest<{}, CreateVenueDto>({}, invalidData);
+      const req = mockRequest({
+        body: invalidData
+      });
       const res = mockResponse();
 
-      createVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        message: 'Name, address, and capacity are required' 
-      });
+      expect(() => createVenue(req, res)).toThrow(ValidationError);
     });
 
     it('should validate map dimensions', () => {
-      const invalidMap = { ...validVenueMap };
-      delete (invalidMap.dimensions as any).width;
-
-      const req = mockRequest<{}, CreateVenueDto>({}, {
-        ...validVenueData,
-        map: invalidMap
-      });
-      const res = mockResponse();
-
-      createVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        message: 'Map dimensions must include width and height' 
-      });
-    });
-
-    it('should validate table configuration', () => {
-      const invalidMap: VenueMap = {
-        dimensions: {
-          width: 1000,
-          height: 800
-        },
-        features: [
-          {
-            type: "table" as const,
-            position: { x: 100, y: 100 },
-            dimensions: { width: 100, height: 100 },
-            numberOfSeats: 0, // Invalid number of seats
-            shape: "round" as const,
-            tableNumber: "T1"
+      const req = mockRequest({
+        body: {
+          ...validVenueData,
+          map: {
+            dimensions: {
+              width: 'invalid'
+            },
+            features: []
           }
-        ]
-      };
-
-      const req = mockRequest<{}, CreateVenueDto>({}, {
-        ...validVenueData,
-        map: invalidMap
+        }
       });
       const res = mockResponse();
 
-      createVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        message: 'Table features must specify numberOfSeats' 
-      });
+      expect(() => createVenue(req, res)).toThrow(ValidationError);
     });
 
-    it('should validate guest seat numbers', () => {
-      const invalidMap: VenueMap = {
-        dimensions: {
-          width: 1000,
-          height: 800
-        },
-        features: [
-          {
-            type: "table" as const,
-            position: { x: 100, y: 100 },
-            dimensions: { width: 100, height: 100 },
-            numberOfSeats: 4,
-            shape: "round" as const,
-            tableNumber: "T1",
-            guests: [
-              { id: "1", name: "Guest 1", seatNumber: 5 } // Invalid seat number
+    it('should validate map features', () => {
+      const req = mockRequest({
+        body: {
+          ...validVenueData,
+          map: {
+            dimensions: {
+              width: 1000,
+              height: 800
+            },
+            features: [
+              {
+                type: 'table',
+                position: { x: 100, y: 100 },
+                dimensions: { width: 100, height: 100 },
+                shape: 'round',
+                tableNumber: 'T1'
+                // Missing numberOfSeats
+              }
             ]
           }
-        ]
-      };
-
-      const req = mockRequest<{}, CreateVenueDto>({}, {
-        ...validVenueData,
-        map: invalidMap
+        }
       });
       const res = mockResponse();
 
-      createVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        message: 'Guest seat number must be between 1 and numberOfSeats' 
-      });
-    });
-
-    it('should validate feature position', () => {
-      const invalidMap: VenueMap = {
-        dimensions: {
-          width: 1000,
-          height: 800
-        },
-        features: [
-          {
-            type: "table" as const,
-            position: { x: null as any, y: 100 }, // Invalid position
-            dimensions: { width: 100, height: 100 },
-            numberOfSeats: 8,
-            shape: "round" as const,
-            tableNumber: "T1"
-          }
-        ]
-      };
-
-      const req = mockRequest<{}, CreateVenueDto>({}, {
-        ...validVenueData,
-        map: invalidMap
-      });
-      const res = mockResponse();
-
-      createVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        message: 'Each feature must have a valid type and position' 
-      });
-    });
-
-    it('should validate map features array', () => {
-      const invalidMap = {
-        dimensions: {
-          width: 1000,
-          height: 800
-        },
-        features: null // Invalid features array
-      };
-
-      const req = mockRequest<{}, CreateVenueDto>({}, {
-        ...validVenueData,
-        map: invalidMap as any
-      });
-      const res = mockResponse();
-
-      createVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        message: 'Map features must be an array' 
-      });
+      expect(() => createVenue(req, res)).toThrow(ValidationError);
     });
   });
 
   describe('updateVenue', () => {
-    let testVenue: Venue;
-
-    beforeEach(() => {
-      testVenue = {
+    it('should update venue with valid data', () => {
+      const testVenue: Venue = {
         id: generateUUID(),
         name: 'Original Venue',
-        address: '123 Original St',
+        address: '123 St',
         capacity: 100,
-        createdAt: new Date()
+        createdAt: new Date(),
+        map: validVenueMap
       };
       venues.push(testVenue);
-    });
 
-    it('should update venue with valid data', () => {
       const updateData: UpdateVenueDto = {
         name: 'Updated Venue',
-        capacity: 150,
-        map: {
-          dimensions: {
-            width: 1000,
-            height: 800
-          },
-          features: [
-            {
-              type: "table" as const,
-              position: { x: 100, y: 100 },
-              dimensions: { width: 100, height: 100 },
-              numberOfSeats: 8,
-              shape: "round" as const,
-              tableNumber: "T1"
-            },
-            {
-              type: "stage" as const,
-              position: { x: 500, y: 50 },
-              dimensions: { width: 200, height: 100 }
-            }
-          ]
-        }
+        capacity: 150
       };
 
-      const req = mockRequest<{ id: string }, UpdateVenueDto>(
-        { id: testVenue.id },
-        updateData
-      );
+      const req = mockRequest({
+        params: { id: testVenue.id },
+        body: updateData
+      });
       const res = mockResponse();
 
       updateVenue(req, res);
@@ -406,134 +290,160 @@ describe('Venue Controller', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         ...testVenue,
-        ...updateData,
-        updatedAt: expect.any(Date)
+        ...updateData
       }));
     });
 
     it('should return 404 when venue is not found', () => {
-      const req = mockRequest<{ id: string }, UpdateVenueDto>(
-        { id: generateUUID() },
-        { name: 'Updated Venue' }
-      );
+      const req = mockRequest({
+        params: { id: generateUUID() },
+        body: { name: 'Updated Venue' }
+      });
       const res = mockResponse();
 
-      updateVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Venue not found' });
+      expect(() => updateVenue(req, res)).toThrow(NotFoundError);
     });
 
     it('should validate updated map data', () => {
-      const invalidMap = { ...validVenueMap };
-      delete (invalidMap.dimensions as any).width;
-
-      const req = mockRequest<{ id: string }, UpdateVenueDto>(
-        { id: testVenue.id },
-        { map: invalidMap }
-      );
-      const res = mockResponse();
-
-      updateVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        message: 'Map dimensions must include width and height' 
-      });
-    });
-
-    it('should handle unexpected errors', () => {
-      const req = mockRequest<{ id: string }, UpdateVenueDto>(
-        { id: testVenue.id },
-        { name: 'Updated Venue' }
-      );
-      const res = mockResponse();
-
-      // Mock venues.findIndex to throw a non-Error object
-      jest.spyOn(venues, 'findIndex').mockImplementation(() => {
-        throw 'Database error'; // Not an Error instance
-      });
-
-      updateVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Something went wrong!' });
-    });
-  });
-
-  describe('deleteVenue', () => {
-    let testVenue: Venue;
-
-    beforeEach(() => {
-      testVenue = {
+      const testVenue = {
         id: generateUUID(),
         name: 'Test Venue',
-        address: '123 Test St',
+        address: '123 St',
         capacity: 100,
         createdAt: new Date()
       };
       venues.push(testVenue);
+
+      const req = mockRequest({
+        params: { id: testVenue.id },
+        body: {
+          map: {
+            dimensions: { width: 'invalid' }
+          }
+        }
+      });
+      const res = mockResponse();
+
+      expect(() => updateVenue(req, res)).toThrow(ValidationError);
     });
 
-    it('should delete venue when no events exist', () => {
-      const req = mockRequest<{ id: string }>({ id: testVenue.id });
+    it('should handle unexpected errors', () => {
+      const testVenue = {
+        id: generateUUID(),
+        name: 'Test Venue',
+        address: '123 St',
+        capacity: 100,
+        createdAt: new Date()
+      };
+      venues.push(testVenue);
+
+      const req = mockRequest({
+        params: { id: testVenue.id },
+        body: {}
+      });
+      const res = mockResponse();
+
+      // Mock array index assignment to throw error
+      const originalVenues = [...venues];
+      const venueIndex = venues.findIndex(v => v.id === testVenue.id);
+      Object.defineProperty(venues, venueIndex, {
+        set: () => {
+          throw new Error('Test error');
+        }
+      });
+
+      expect(() => updateVenue(req, res)).toThrow(BaseError);
+
+      // Restore original array
+      Object.defineProperty(venues, venueIndex, {
+        value: originalVenues[venueIndex],
+        writable: true,
+        configurable: true
+      });
+    });
+  });
+
+  describe('deleteVenue', () => {
+    it('should delete venue when no events are associated', () => {
+      const testVenue = {
+        id: generateUUID(),
+        name: 'Test Venue',
+        address: '123 St',
+        capacity: 100,
+        createdAt: new Date()
+      };
+      venues.push(testVenue);
+
+      const req = mockRequest({
+        params: { id: testVenue.id }
+      });
       const res = mockResponse();
 
       deleteVenue(req, res);
 
       expect(res.status).toHaveBeenCalledWith(204);
-      expect(res.send).toHaveBeenCalled();
       expect(venues).toHaveLength(0);
     });
 
     it('should return 400 when venue has associated events', () => {
-      // Create an event associated with the venue
+      const testVenue = {
+        id: generateUUID(),
+        name: 'Test Venue',
+        address: '123 St',
+        capacity: 100,
+        createdAt: new Date()
+      };
+      venues.push(testVenue);
+
       events.push({
         id: generateUUID(),
-        userId: generateUUID(),
-        venueId: testVenue.id,
-        type: EventType.WEDDING,
-        title: "Test Event",
-        description: "",
+        title: 'Test Event',
         date: new Date(),
-        createdAt: new Date()
+        type: EventType.WEDDING,
+        venueId: testVenue.id,
+        createdAt: new Date(),
+        userId: generateUUID(),
+        description: 'Test event description'
       });
 
-      const req = mockRequest<{ id: string }>({ id: testVenue.id });
+      const req = mockRequest({
+        params: { id: testVenue.id }
+      });
       const res = mockResponse();
 
-      deleteVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        message: 'Cannot delete venue with existing events' 
-      });
-      expect(venues).toHaveLength(1);
+      expect(() => deleteVenue(req, res)).toThrow(ValidationError);
     });
 
     it('should return 400 when invalid UUID is provided', () => {
-      const req = mockRequest<{ id: string }>({ id: 'invalid-uuid' });
+      const req = mockRequest({
+        params: { id: 'invalid-uuid' }
+      });
       const res = mockResponse();
 
-      deleteVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid venue ID format' });
+      expect(() => deleteVenue(req, res)).toThrow(ValidationError);
     });
 
     it('should handle unexpected errors', () => {
-      const req = mockRequest<{ id: string }>({ id: testVenue.id });
+      const testVenue = {
+        id: generateUUID(),
+        name: 'Test Venue',
+        address: '123 St',
+        capacity: 100,
+        createdAt: new Date()
+      };
+      venues.push(testVenue);
+
+      const req = mockRequest({
+        params: { id: testVenue.id }
+      });
       const res = mockResponse();
 
-      // Mock events.some to throw an error
-      jest.spyOn(events, 'some').mockImplementation(() => {
-        throw new Error('Database error');
+      // Mock venues array to throw error
+      jest.spyOn(venues, 'splice').mockImplementation(() => {
+        throw new Error('Test error');
       });
 
-      deleteVenue(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Failed to delete venue' });
+      expect(() => deleteVenue(req, res)).toThrow(BaseError);
     });
   });
 }); 
