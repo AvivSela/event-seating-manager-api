@@ -20,6 +20,15 @@ ignore:
   - "**/test/**"
   - "**/tests/**"
   - "**/__tests__/**"
-  - "apps/web/**/*"    # Ignore UI package
-  - "packages/auth/**/*"  # Ignore auth package 
+
+flags:
+  api:
+    paths:
+      - apps/api/
+  web:
+    paths:
+      - apps/web/
+  auth:
+    paths:
+      - packages/auth/
 

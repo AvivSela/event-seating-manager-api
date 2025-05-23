@@ -8,7 +8,7 @@ import { generateUUID, isValidUUID } from "../utils/uuid";
 export let guests: Guest[] = [];
 
 // Validate guest data
-function validateGuest(data: CreateGuestDto | UpdateGuestDto): void {
+export function validateGuest(data: CreateGuestDto | UpdateGuestDto): void {
   if ('partySize' in data && typeof data.partySize === 'number' && data.partySize < 1) {
     throw new Error("Party size must be at least 1");
   }
@@ -21,39 +21,61 @@ function validateGuest(data: CreateGuestDto | UpdateGuestDto): void {
 // Create a new guest
 export const createGuest = async (req: Request, res: Response) => {
   try {
-    const eventId = req.params.eventId;
+    const { eventId } = req.params;
+    const { name, email, phone, partySize, status = GuestStatus.PENDING } = req.body;
+
+    // Validate event ID format
     if (!isValidUUID(eventId)) {
-      return res.status(400).json({ message: "Invalid event ID format" });
+      return res.status(400).json({ message: 'Invalid event ID format' });
     }
 
+    // Check if event exists
     const event = events.find(e => e.id === eventId);
     if (!event) {
-      return res.status(404).json({ message: "Event not found" });
+      return res.status(404).json({ message: 'Event not found' });
     }
 
-    const guestData: CreateGuestDto = {
-      ...req.body,
-      eventId,
-      status: req.body.status || GuestStatus.INVITED
-    };
+    // Validate party size
+    if (partySize !== undefined && partySize < 1) {
+      return res.status(400).json({ message: 'Party size must be at least 1' });
+    }
 
-    validateGuest(guestData);
+    // Validate required fields
+    if (!name || !email || !phone || !partySize) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
 
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Validate phone format
+    if (!/^\+?[\d\s-]+$/.test(phone)) {
+      return res.status(400).json({ message: 'Invalid phone format' });
+    }
+
+    // Validate guest status
+    if (!Object.values(GuestStatus).includes(status)) {
+      return res.status(400).json({ message: 'Invalid guest status' });
+    }
+
+    // Create guest
     const guest: Guest = {
       id: generateUUID(),
-      eventId: guestData.eventId,
-      name: guestData.name,
-      email: guestData.email,
-      phone: guestData.phone,
-      status: guestData.status as GuestStatus,
-      partySize: guestData.partySize,
-      createdAt: new Date(),
+      eventId,
+      name,
+      email,
+      phone,
+      partySize,
+      status,
+      createdAt: new Date()
     };
 
     guests.push(guest);
     res.status(201).json(guest);
   } catch (error) {
-    res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create guest" });
+    res.status(500).json({ message: error instanceof Error ? error.message : 'Failed to create guest' });
   }
 };
 
@@ -63,6 +85,12 @@ export const getEventGuests = async (req: Request, res: Response) => {
     const eventId = req.params.eventId;
     if (!isValidUUID(eventId)) {
       return res.status(400).json({ message: "Invalid event ID format" });
+    }
+
+    // Check if event exists
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
     }
 
     const assigned = req.query.assigned;
@@ -102,7 +130,7 @@ export const getGuest = async (req: Request, res: Response) => {
   try {
     const { eventId, guestId } = req.params;
     if (!isValidUUID(eventId) || !isValidUUID(guestId)) {
-      return res.status(400).json({ message: "Invalid ID format" });
+      return res.status(400).json({ message: "Invalid guest ID format" });
     }
 
     const guest = guests.find(g => g.id === guestId && g.eventId === eventId);
@@ -167,6 +195,12 @@ export const deleteGuest = async (req: Request, res: Response) => {
     const guestIndex = guests.findIndex(g => g.id === guestId && g.eventId === eventId);
     if (guestIndex === -1) {
       return res.status(404).json({ message: "Guest not found" });
+    }
+
+    // Delete any associated table assignments
+    const assignmentIndex = tableAssignments.findIndex(a => a.guestId === guestId);
+    if (assignmentIndex !== -1) {
+      tableAssignments.splice(assignmentIndex, 1);
     }
 
     guests.splice(guestIndex, 1);

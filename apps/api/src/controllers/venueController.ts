@@ -7,6 +7,7 @@ import {
   VenueFeature,
 } from "../types/venue";
 import { generateUUID, isValidUUID } from "../utils/uuid";
+import { events } from "./eventController";
 
 export let venues: Venue[] = [];
 
@@ -62,24 +63,32 @@ function validateVenueMap(map: VenueMap | undefined): void {
 
 // Get all venues
 export const getAllVenues = (_req: Request, res: Response): void => {
-  res.json(venues);
+  try {
+    res.json(venues);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to retrieve venues" });
+  }
 };
 
 // Get venue by ID
 export const getVenueById = (req: Request, res: Response): void => {
-  const venueId = req.params.id;
+  try {
+    const venueId = req.params.id;
 
-  if (!isValidUUID(venueId)) {
-    res.status(400).json({ message: "Invalid venue ID format" });
-    return;
-  }
+    if (!isValidUUID(venueId)) {
+      res.status(400).json({ message: "Invalid venue ID format" });
+      return;
+    }
 
-  const venue = venues.find((v) => v.id === venueId);
-  if (!venue) {
-    res.status(404).json({ message: "Venue not found" });
-    return;
+    const venue = venues.find((v) => v.id === venueId);
+    if (!venue) {
+      res.status(404).json({ message: "Venue not found" });
+      return;
+    }
+    res.json(venue);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to retrieve venue" });
   }
-  res.json(venue);
 };
 
 // Create new venue
@@ -160,19 +169,31 @@ export const updateVenue = (req: Request, res: Response): void => {
 
 // Delete venue
 export const deleteVenue = (req: Request, res: Response): void => {
-  const venueId = req.params.id;
+  try {
+    const venueId = req.params.id;
 
-  if (!isValidUUID(venueId)) {
-    res.status(400).json({ message: "Invalid venue ID format" });
-    return;
+    if (!isValidUUID(venueId)) {
+      res.status(400).json({ message: "Invalid venue ID format" });
+      return;
+    }
+
+    // Check if venue exists
+    const venue = venues.find(v => v.id === venueId);
+    if (!venue) {
+      res.status(404).json({ message: "Venue not found" });
+      return;
+    }
+
+    // Check if venue has any associated events
+    const hasEvents = events.some(e => e.venueId === venueId);
+    if (hasEvents) {
+      res.status(400).json({ message: "Cannot delete venue with existing events" });
+      return;
+    }
+
+    venues = venues.filter((v) => v.id !== venueId);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete venue" });
   }
-
-  const venueIndex = venues.findIndex((v) => v.id === venueId);
-  if (venueIndex === -1) {
-    res.status(404).json({ message: "Venue not found" });
-    return;
-  }
-
-  venues = venues.filter((v) => v.id !== venueId);
-  res.status(204).send();
 };
