@@ -1,6 +1,8 @@
-import express, { Express } from "express";
+import express, { Express, Request, Response, RequestHandler } from "express";
 import cors from "cors";
 import morgan from "morgan";
+import swaggerUi from 'swagger-ui-express';
+import { specs } from './swagger';
 import userRoutes from "./routes/userRoutes";
 import eventRoutes from "./routes/eventRoutes";
 import venueRoutes from "./routes/venueRoutes";
@@ -14,6 +16,15 @@ const app: Express = express();
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
+
+// Swagger UI
+const options = {
+  explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }'
+};
+
+app.use('/api-docs', swaggerUi.serve as unknown as RequestHandler[]);
+app.use('/api-docs', swaggerUi.setup(specs, options) as unknown as RequestHandler);
 
 // Routes
 app.use("/api/users", userRoutes);
