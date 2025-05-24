@@ -48,6 +48,7 @@ export interface Venue extends BaseEntity {
   capacity: number;
   description?: string;
   map?: VenueMap;
+  ownerId: string;
 }
 
 export interface CreateVenueDto {
@@ -56,6 +57,7 @@ export interface CreateVenueDto {
   capacity: number;
   description?: string;
   map?: VenueMap;
+  ownerId: string;
 }
 
 export interface UpdateVenueDto {
@@ -64,4 +66,5 @@ export interface UpdateVenueDto {
   capacity?: number;
   description?: string;
   map?: VenueMap;
+  ownerId?: string;
 }

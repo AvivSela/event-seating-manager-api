@@ -15,7 +15,7 @@ import { BaseError } from "../types/errors/base.error";
 export const venues: Venue[] = [];
 
 // Validate map data
-function validateVenueMap(map: VenueMap): void {
+export function validateVenueMap(map: VenueMap): void {
   if (
     !map.dimensions ||
     typeof map.dimensions.width !== "number" ||
